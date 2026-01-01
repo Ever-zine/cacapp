@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { PoopLog, PoopType, POOP_TYPES } from '@/lib/types'
-import { addPoopLog } from './actions'
 import { createClient } from '@/lib/supabase/client'
 
 interface AddPoopFormProps {
@@ -32,7 +31,13 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
     setLoading(true)
     setError(null)
 
-    const result = await addPoopLog({
+    const supabase = createClient()
+
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData?.user?.id ?? null
+
+    const { error } = await supabase.from('poop_logs').insert({
+      user_id: userId,
       date: formData.date,
       time: formData.time,
       location: formData.location,
@@ -40,14 +45,13 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
       comments: formData.comments || null,
     })
 
-    if (result.error) {
-      setError(result.error)
+    if (error) {
+      setError(error.message)
       setLoading(false)
       return
     }
 
     // Récupérer le log créé
-    const supabase = createClient()
     const { data } = await supabase
       .from('poop_logs')
       .select('*')
