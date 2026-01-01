@@ -1,33 +1,33 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { PoopLog, POOP_TYPES } from '@/lib/types'
-import { logout } from '@/app/(auth)/actions'
 import AddPoopForm from './AddPoopForm'
-import { deletePoopLog } from './actions'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
-interface DashboardClientProps {
-  user: User
-  initialLogs: PoopLog[]
-}
-
-export default function DashboardClient({ user, initialLogs }: DashboardClientProps) {
-  const [logs, setLogs] = useState<PoopLog[]>(initialLogs)
+export default function DashboardClient() {
+  const [logs, setLogs] = useState<PoopLog[]>([])
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const handleLogAdded = (newLog: PoopLog) => {
     setLogs([newLog, ...logs])
     setShowForm(false)
   }
 
+  const router = useRouter()
+
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer cette entrée ?')) return
-    
+
     setDeleting(id)
-    const result = await deletePoopLog(id)
-    if (!result.error) {
+    const supabase = createClient()
+    const { error } = await supabase.from('poop_logs').delete().eq('id', id)
+    if (!error) {
       setLogs(logs.filter(log => log.id !== id))
     }
     setDeleting(null)
@@ -55,6 +55,37 @@ export default function DashboardClient({ user, initialLogs }: DashboardClientPr
     return acc
   }, {} as Record<string, PoopLog[]>)
 
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
+      const currentUser = userData?.user ?? null
+      if (!currentUser) {
+        // not authenticated — redirect to login
+        window.location.href = '/login'
+        return
+      }
+      setUser(currentUser)
+
+      const { data } = await supabase
+        .from('poop_logs')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('time', { ascending: false })
+
+      setLogs((data as PoopLog[]) || [])
+      setLoading(false)
+    }
+
+    load()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-900 dark:to-zinc-800">
       {/* Header */}
@@ -64,17 +95,19 @@ export default function DashboardClient({ user, initialLogs }: DashboardClientPr
             <span className="text-3xl">💩</span>
             <div>
               <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">CacApp</h1>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">{user.email}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">{user?.email}</p>
             </div>
           </div>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
-            >
-              Déconnexion
-            </button>
-          </form>
+          <button
+            onClick={async () => {
+              const supabase = createClient()
+              await supabase.auth.signOut()
+              router.push('/login')
+            }}
+            className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+          >
+            Déconnexion
+          </button>
         </div>
       </header>
 

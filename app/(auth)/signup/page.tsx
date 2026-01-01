@@ -1,21 +1,37 @@
-'use client'
+"use client"
 
 import { useState } from 'react'
-import { signup } from '../actions'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(formData: FormData) {
+  const router = useRouter()
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setLoading(true)
     setError(null)
-    const result = await signup(formData)
-    if (result?.error) {
-      setError(result.error)
-      setLoading(false)
+
+    const form = new FormData(e.currentTarget)
+    const data = {
+      email: form.get('email') as string,
+      password: form.get('password') as string,
     }
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.signUp(data)
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+
+    router.push('/dashboard')
   }
 
   return (
@@ -34,7 +50,7 @@ export default function SignupPage() {
             </div>
           )}
 
-          <form action={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Email
