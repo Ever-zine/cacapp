@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PoopLog, PoopType, POOP_TYPES } from '@/lib/types'
+import { PoopLog, PoopType, POOP_TYPES, LocationTag } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 
 interface AddPoopFormProps {
@@ -30,6 +30,14 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
   })
 
   const [geoStatus, setGeoStatus] = useState<'loading' | 'success' | 'error' | 'denied'>('loading')
+  
+  // États pour les tags de lieu
+  const [locationTags, setLocationTags] = useState<LocationTag[]>([])
+  const [loadingTags, setLoadingTags] = useState(true)
+  const [showNewTagInput, setShowNewTagInput] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagEmoji, setNewTagEmoji] = useState('📍')
+  const [creatingTag, setCreatingTag] = useState(false)
 
   // Récupérer la géolocalisation automatiquement au chargement
   useEffect(() => {
@@ -66,6 +74,70 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
   }, [])
+
+  // Charger les tags de lieu de l'utilisateur
+  useEffect(() => {
+    const loadLocationTags = async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('location_tags')
+        .select('*')
+        .order('name', { ascending: true })
+      
+      if (data) {
+        setLocationTags(data as LocationTag[])
+      }
+      setLoadingTags(false)
+    }
+    loadLocationTags()
+  }, [])
+
+  // Créer un nouveau tag de lieu
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) return
+    
+    setCreatingTag(true)
+    const supabase = createClient()
+    
+    const { data: userData } = await supabase.auth.getUser()
+    const userId = userData?.user?.id
+    
+    if (!userId) {
+      setError('Utilisateur non connecté')
+      setCreatingTag(false)
+      return
+    }
+
+    const { data, error: insertError } = await supabase
+      .from('location_tags')
+      .insert({
+        user_id: userId,
+        name: newTagName.trim(),
+        emoji: newTagEmoji || '📍'
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        setError('Ce lieu existe déjà')
+      } else {
+        setError(insertError.message)
+      }
+      setCreatingTag(false)
+      return
+    }
+
+    if (data) {
+      const newTag = data as LocationTag
+      setLocationTags(prev => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name)))
+      setFormData(prev => ({ ...prev, location: newTag.name }))
+      setNewTagName('')
+      setNewTagEmoji('📍')
+      setShowNewTagInput(false)
+    }
+    setCreatingTag(false)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -145,17 +217,97 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
           📍 Lieu
         </label>
-        <input
-          type="text"
-          value={formData.location}
-          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-          required
-          placeholder="Maison, Bureau, Restaurant..."
-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-zinc-800 dark:text-white"
-        />
+        
+        {loadingTags ? (
+          <div className="text-sm text-zinc-500 dark:text-zinc-400">Chargement des lieux...</div>
+        ) : (
+          <>
+            {/* Tags existants */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {locationTags.map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, location: tag.name })}
+                  className={`px-3 py-2 rounded-full border-2 transition-all text-sm font-medium ${
+                    formData.location === tag.name
+                      ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
+                      : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300'
+                  }`}
+                >
+                  {tag.emoji} {tag.name}
+                </button>
+              ))}
+              
+              {/* Bouton pour ajouter un nouveau lieu */}
+              {!showNewTagInput && (
+                <button
+                  type="button"
+                  onClick={() => setShowNewTagInput(true)}
+                  className="px-3 py-2 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-amber-500 dark:hover:border-amber-500 text-zinc-500 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400 transition-all text-sm font-medium"
+                >
+                  + Nouveau lieu
+                </button>
+              )}
+            </div>
+
+            {/* Formulaire pour créer un nouveau tag */}
+            {showNewTagInput && (
+              <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-700 mb-3">
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newTagEmoji}
+                    onChange={(e) => setNewTagEmoji(e.target.value)}
+                    placeholder="📍"
+                    maxLength={2}
+                    className="w-14 px-2 py-2 text-center border border-zinc-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-zinc-800 dark:text-white"
+                  />
+                  <input
+                    type="text"
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    placeholder="Nom du lieu (ex: Travail, Chez moi...)"
+                    className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-zinc-800 dark:text-white"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewTagInput(false)
+                      setNewTagName('')
+                      setNewTagEmoji('📍')
+                    }}
+                    className="flex-1 py-2 text-sm border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateTag}
+                    disabled={!newTagName.trim() || creatingTag}
+                    className="flex-1 py-2 text-sm bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {creatingTag ? 'Création...' : 'Créer'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Message si aucun lieu sélectionné */}
+            {!formData.location && locationTags.length > 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">Sélectionnez un lieu ou créez-en un nouveau</p>
+            )}
+            {!formData.location && locationTags.length === 0 && !showNewTagInput && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Créez votre premier lieu pour commencer</p>
+            )}
+          </>
+        )}
       </div>
 
       <div>
@@ -237,7 +389,7 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
         </button>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !formData.location}
           className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Enregistrement...' : 'Enregistrer 💩'}

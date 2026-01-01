@@ -47,3 +47,35 @@ CREATE POLICY "Users can delete own poop_logs" ON poop_logs
 -- Index pour améliorer les performances des requêtes
 CREATE INDEX idx_poop_logs_user_id ON poop_logs(user_id);
 CREATE INDEX idx_poop_logs_date ON poop_logs(date DESC);
+
+-- Créer la table location_tags pour les lieux personnalisés
+CREATE TABLE location_tags (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  emoji VARCHAR(10) DEFAULT '📍',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, name)
+);
+
+-- Activer Row Level Security (RLS) pour location_tags
+ALTER TABLE location_tags ENABLE ROW LEVEL SECURITY;
+
+-- Politiques RLS pour location_tags
+CREATE POLICY "Users can view own location_tags" ON location_tags
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own location_tags" ON location_tags
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own location_tags" ON location_tags
+  FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own location_tags" ON location_tags
+  FOR DELETE
+  USING (auth.uid() = user_id);
+
+CREATE INDEX idx_location_tags_user_id ON location_tags(user_id);

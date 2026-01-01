@@ -41,3 +41,11 @@ export interface PoopLogInsert {
   poop_type: PoopType
   comments?: string | null
 }
+
+export interface LocationTag {
+  id: string
+  user_id: string
+  name: string
+  emoji: string
+  created_at: string
+}
