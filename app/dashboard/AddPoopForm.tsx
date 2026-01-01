@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PoopLog, PoopType, POOP_TYPES, LocationTag } from '@/lib/types'
+import { PoopLog, PoopType, POOP_TYPES, PoopSize, POOP_SIZES, LocationTag } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 
 interface AddPoopFormProps {
@@ -26,6 +26,7 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
     latitude: null as number | null,
     longitude: null as number | null,
     poop_type: 'type4' as PoopType,
+    size: 'normal' as PoopSize,
     comments: '',
   })
 
@@ -158,6 +159,7 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
       latitude: formData.latitude,
       longitude: formData.longitude,
       poop_type: formData.poop_type,
+      size: formData.size,
       comments: formData.comments || null,
     })
 
@@ -363,6 +365,38 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
               </div>
             </button>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+          📏 Taille
+        </label>
+        <div className="space-y-3">
+          <input
+            type="range"
+            min="0"
+            max="5"
+            value={POOP_SIZES.findIndex(s => s.value === formData.size)}
+            onChange={(e) => setFormData({ ...formData, size: POOP_SIZES[parseInt(e.target.value)].value })}
+            className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+          />
+          <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            {POOP_SIZES.map((size, index) => (
+              <span
+                key={size.value}
+                className={`text-center cursor-pointer transition-all ${
+                  formData.size === size.value
+                    ? 'text-amber-600 dark:text-amber-400 font-semibold scale-110'
+                    : 'hover:text-zinc-700 dark:hover:text-zinc-300'
+                }`}
+                onClick={() => setFormData({ ...formData, size: size.value })}
+              >
+                <span className="block text-lg">{size.emoji}</span>
+                <span className="block mt-1">{size.label}</span>
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 

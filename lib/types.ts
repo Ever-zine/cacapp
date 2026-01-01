@@ -16,7 +16,16 @@ export const POOP_TYPES: { value: PoopType; label: string; emoji: string; descri
   { value: 'type6', label: 'Type 6', emoji: '🍂', description: 'Flocons déchiquetés' },
   { value: 'type7', label: 'Type 7', emoji: '💧', description: 'Liquide' },
 ]
+export type PoopSize = 'small' | 'medium' | 'normal' | 'big' | 'monster' | 'destroyer'
 
+export const POOP_SIZES: { value: PoopSize; label: string; emoji: string }[] = [
+  { value: 'small', label: 'Petit', emoji: '🤏' },
+  { value: 'medium', label: 'Moyen', emoji: '👌' },
+  { value: 'normal', label: 'Normal', emoji: '👍' },
+  { value: 'big', label: 'Gros', emoji: '💪' },
+  { value: 'monster', label: 'Brown monster', emoji: '👹' },
+  { value: 'destroyer', label: 'Toilet destroyer', emoji: '💥' },
+]
 export interface PoopLog {
   id: string
   user_id: string
@@ -27,6 +36,7 @@ export interface PoopLog {
   latitude: number | null
   longitude: number | null
   poop_type: PoopType
+  size: PoopSize
   comments: string | null
   created_at: string
 }
@@ -39,6 +49,7 @@ export interface PoopLogInsert {
   latitude?: number | null
   longitude?: number | null
   poop_type: PoopType
+  size: PoopSize
   comments?: string | null
 }
 

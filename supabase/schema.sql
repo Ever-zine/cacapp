@@ -12,6 +12,7 @@ CREATE TABLE poop_logs (
   latitude DOUBLE PRECISION, -- Coordonnées GPS
   longitude DOUBLE PRECISION,
   poop_type VARCHAR(10) NOT NULL CHECK (poop_type IN ('type1', 'type2', 'type3', 'type4', 'type5', 'type6', 'type7')),
+  size VARCHAR(20) NOT NULL DEFAULT 'normal' CHECK (size IN ('small', 'medium', 'normal', 'big', 'monster', 'destroyer')),
   comments TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -20,6 +21,7 @@ CREATE TABLE poop_logs (
 -- ALTER TABLE poop_logs ADD COLUMN address TEXT;
 -- ALTER TABLE poop_logs ADD COLUMN latitude DOUBLE PRECISION;
 -- ALTER TABLE poop_logs ADD COLUMN longitude DOUBLE PRECISION;
+-- ALTER TABLE poop_logs ADD COLUMN size VARCHAR(20) NOT NULL DEFAULT 'normal' CHECK (size IN ('small', 'medium', 'normal', 'big', 'monster', 'destroyer'));
 
 -- Activer Row Level Security (RLS)
 ALTER TABLE poop_logs ENABLE ROW LEVEL SECURITY;
