@@ -8,10 +8,18 @@ CREATE TABLE poop_logs (
   date DATE NOT NULL,
   time TIME NOT NULL,
   location VARCHAR(255) NOT NULL,
+  address TEXT, -- Adresse géolocalisée (peut être null si géolocalisation refusée)
+  latitude DOUBLE PRECISION, -- Coordonnées GPS
+  longitude DOUBLE PRECISION,
   poop_type VARCHAR(10) NOT NULL CHECK (poop_type IN ('type1', 'type2', 'type3', 'type4', 'type5', 'type6', 'type7')),
   comments TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migration pour ajouter les colonnes à une table existante:
+-- ALTER TABLE poop_logs ADD COLUMN address TEXT;
+-- ALTER TABLE poop_logs ADD COLUMN latitude DOUBLE PRECISION;
+-- ALTER TABLE poop_logs ADD COLUMN longitude DOUBLE PRECISION;
 
 -- Activer Row Level Security (RLS)
 ALTER TABLE poop_logs ENABLE ROW LEVEL SECURITY;

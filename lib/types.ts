@@ -23,6 +23,9 @@ export interface PoopLog {
   date: string
   time: string
   location: string
+  address: string | null
+  latitude: number | null
+  longitude: number | null
   poop_type: PoopType
   comments: string | null
   created_at: string
@@ -32,6 +35,9 @@ export interface PoopLogInsert {
   date: string
   time: string
   location: string
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
   poop_type: PoopType
   comments?: string | null
 }

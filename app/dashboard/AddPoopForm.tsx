@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PoopLog, PoopType, POOP_TYPES } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 
@@ -22,9 +22,50 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
     date: defaultDate,
     time: defaultTime,
     location: '',
+    address: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
     poop_type: 'type4' as PoopType,
     comments: '',
   })
+
+  const [geoStatus, setGeoStatus] = useState<'loading' | 'success' | 'error' | 'denied'>('loading')
+
+  // Récupérer la géolocalisation automatiquement au chargement
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setGeoStatus('error')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        setFormData(prev => ({ ...prev, latitude, longitude }))
+        
+        // Reverse geocoding pour obtenir l'adresse
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            { headers: { 'Accept-Language': 'fr' } }
+          )
+          const data = await response.json()
+          if (data.display_name) {
+            setFormData(prev => ({ ...prev, address: data.display_name }))
+            setGeoStatus('success')
+          }
+        } catch {
+          // Si le reverse geocoding échoue, on garde juste les coordonnées
+          setGeoStatus('success')
+        }
+      },
+      (error) => {
+        console.error('Erreur de géolocalisation:', error)
+        setGeoStatus(error.code === 1 ? 'denied' : 'error')
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,6 +82,9 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
       date: formData.date,
       time: formData.time,
       location: formData.location,
+      address: formData.address || null,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
       poop_type: formData.poop_type,
       comments: formData.comments || null,
     })
@@ -112,6 +156,36 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
           placeholder="Maison, Bureau, Restaurant..."
           className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-zinc-800 dark:text-white"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          🗺️ Adresse (géolocalisation)
+          {geoStatus === 'loading' && (
+            <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">⏳ Localisation en cours...</span>
+          )}
+          {geoStatus === 'success' && (
+            <span className="ml-2 text-xs text-green-600 dark:text-green-400">✓ Localisé</span>
+          )}
+          {geoStatus === 'denied' && (
+            <span className="ml-2 text-xs text-red-600 dark:text-red-400">⚠️ Accès refusé</span>
+          )}
+          {geoStatus === 'error' && (
+            <span className="ml-2 text-xs text-red-600 dark:text-red-400">⚠️ Non disponible</span>
+          )}
+        </label>
+        <input
+          type="text"
+          value={formData.address}
+          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          placeholder={geoStatus === 'loading' ? 'Récupération de l\'adresse...' : 'Adresse (optionnel)'}
+          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-zinc-800 dark:text-white"
+        />
+        {formData.latitude && formData.longitude && (
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            📌 {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+          </p>
+        )}
       </div>
 
       <div>
