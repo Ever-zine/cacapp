@@ -60,3 +60,42 @@ export interface LocationTag {
   emoji: string
   created_at: string
 }
+
+// Profil utilisateur
+export type AccentColor = 'amber' | 'red' | 'orange' | 'yellow' | 'lime' | 'green' | 'emerald' | 'teal' | 'cyan' | 'sky' | 'blue' | 'indigo' | 'violet' | 'purple' | 'fuchsia' | 'pink' | 'rose'
+
+export const ACCENT_COLORS: { value: AccentColor; label: string; hex: string }[] = [
+  { value: 'amber', label: 'Ambre', hex: '#f59e0b' },
+  { value: 'red', label: 'Rouge', hex: '#ef4444' },
+  { value: 'orange', label: 'Orange', hex: '#f97316' },
+  { value: 'yellow', label: 'Jaune', hex: '#eab308' },
+  { value: 'lime', label: 'Citron vert', hex: '#84cc16' },
+  { value: 'green', label: 'Vert', hex: '#22c55e' },
+  { value: 'emerald', label: 'Émeraude', hex: '#10b981' },
+  { value: 'teal', label: 'Sarcelle', hex: '#14b8a6' },
+  { value: 'cyan', label: 'Cyan', hex: '#06b6d4' },
+  { value: 'sky', label: 'Ciel', hex: '#0ea5e9' },
+  { value: 'blue', label: 'Bleu', hex: '#3b82f6' },
+  { value: 'indigo', label: 'Indigo', hex: '#6366f1' },
+  { value: 'violet', label: 'Violet', hex: '#8b5cf6' },
+  { value: 'purple', label: 'Pourpre', hex: '#a855f7' },
+  { value: 'fuchsia', label: 'Fuchsia', hex: '#d946ef' },
+  { value: 'pink', label: 'Rose', hex: '#ec4899' },
+  { value: 'rose', label: 'Rosé', hex: '#f43f5e' },
+]
+
+export const AVATAR_EMOJIS = [
+  '💩', '😎', '🤠', '🥳', '👻', '👽', '🤖', '🐶', '🐱', '🦁',
+  '🐻', '🐼', '🐨', '🦊', '🦉', '🦄', '🐉', '🦖', '🐙', '🧚',
+  '🧙', '🧛', '🧜', '🧞', '🧟', '🥷', '🥸', '🌟', '🔥', '✨'
+]
+
+export interface UserProfile {
+  id: string
+  user_id: string
+  pseudo: string | null
+  avatar_emoji: string
+  accent_color: AccentColor
+  created_at: string
+  updated_at: string
+}

@@ -26,10 +26,10 @@ CREATE TABLE poop_logs (
 -- Activer Row Level Security (RLS)
 ALTER TABLE poop_logs ENABLE ROW LEVEL SECURITY;
 
--- Politique: les utilisateurs ne peuvent voir que leurs propres logs
-CREATE POLICY "Users can view own poop_logs" ON poop_logs
+-- Politique: tout le monde peut voir tous les logs (pour la carte)
+CREATE POLICY "Anyone can view all poop_logs" ON poop_logs
   FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (true);
 
 -- Politique: les utilisateurs ne peuvent insérer que leurs propres logs
 CREATE POLICY "Users can insert own poop_logs" ON poop_logs
@@ -81,3 +81,32 @@ CREATE POLICY "Users can delete own location_tags" ON location_tags
   USING (auth.uid() = user_id);
 
 CREATE INDEX idx_location_tags_user_id ON location_tags(user_id);
+
+-- Créer la table user_profiles pour les préférences utilisateur
+CREATE TABLE user_profiles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  pseudo VARCHAR(50),
+  avatar_emoji VARCHAR(10) DEFAULT '💩',
+  accent_color VARCHAR(20) DEFAULT 'amber',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Activer Row Level Security (RLS) pour user_profiles
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+
+-- Politiques RLS pour user_profiles
+CREATE POLICY "Anyone can view all profiles" ON user_profiles
+  FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can insert own profile" ON user_profiles
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own profile" ON user_profiles
+  FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
