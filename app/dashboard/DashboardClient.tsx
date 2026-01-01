@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 export default function DashboardClient() {
   const [logs, setLogs] = useState<PoopLog[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [editingLog, setEditingLog] = useState<PoopLog | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -17,6 +18,23 @@ export default function DashboardClient() {
   const handleLogAdded = (newLog: PoopLog) => {
     setLogs([newLog, ...logs])
     setShowForm(false)
+    setEditingLog(null)
+  }
+
+  const handleLogUpdated = (updatedLog: PoopLog) => {
+    setLogs(logs.map(log => log.id === updatedLog.id ? updatedLog : log))
+    setShowForm(false)
+    setEditingLog(null)
+  }
+
+  const handleEdit = (log: PoopLog) => {
+    setEditingLog(log)
+    setShowForm(true)
+  }
+
+  const handleCloseForm = () => {
+    setShowForm(false)
+    setEditingLog(null)
   }
 
   const router = useRouter()
@@ -129,16 +147,20 @@ export default function DashboardClient() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                    Nouvelle entrée
+                    {editingLog ? 'Modifier l\'entrée' : 'Nouvelle entrée'}
                   </h2>
                   <button
-                    onClick={() => setShowForm(false)}
+                    onClick={handleCloseForm}
                     className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                   >
                     ✕
                   </button>
                 </div>
-                <AddPoopForm onSuccess={handleLogAdded} onCancel={() => setShowForm(false)} />
+                <AddPoopForm 
+                  onSuccess={editingLog ? handleLogUpdated : handleLogAdded} 
+                  onCancel={handleCloseForm}
+                  editLog={editingLog}
+                />
               </div>
             </div>
           </div>
@@ -213,13 +235,23 @@ export default function DashboardClient() {
                             </p>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleDelete(log.id)}
-                          disabled={deleting === log.id}
-                          className="text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-50"
-                        >
-                          {deleting === log.id ? '...' : '🗑️'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(log)}
+                            className="text-zinc-400 hover:text-amber-500 transition-colors"
+                            title="Modifier"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleDelete(log.id)}
+                            disabled={deleting === log.id}
+                            className="text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                            title="Supprimer"
+                          >
+                            {deleting === log.id ? '...' : '🗑️'}
+                          </button>
+                        </div>
                       </div>
                     )
                   })}

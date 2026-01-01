@@ -7,30 +7,33 @@ import { createClient } from '@/lib/supabase/client'
 interface AddPoopFormProps {
   onSuccess: (log: PoopLog) => void
   onCancel: () => void
+  editLog?: PoopLog | null // Log à éditer (optionnel)
 }
 
-export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
+export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Valeurs par défaut : maintenant
+  const isEditMode = !!editLog
+  
+  // Valeurs par défaut : maintenant ou valeurs du log à éditer
   const now = new Date()
-  const defaultDate = now.toISOString().split('T')[0]
-  const defaultTime = now.toTimeString().slice(0, 5)
+  const defaultDate = editLog?.date || now.toISOString().split('T')[0]
+  const defaultTime = editLog?.time?.slice(0, 5) || now.toTimeString().slice(0, 5)
 
   const [formData, setFormData] = useState({
     date: defaultDate,
     time: defaultTime,
-    location: '',
-    address: '',
-    latitude: null as number | null,
-    longitude: null as number | null,
-    poop_type: 'type4' as PoopType,
-    size: 'normal' as PoopSize,
-    comments: '',
+    location: editLog?.location || '',
+    address: editLog?.address || '',
+    latitude: editLog?.latitude ?? null as number | null,
+    longitude: editLog?.longitude ?? null as number | null,
+    poop_type: (editLog?.poop_type || 'type4') as PoopType,
+    size: (editLog?.size || 'normal') as PoopSize,
+    comments: editLog?.comments || '',
   })
 
-  const [geoStatus, setGeoStatus] = useState<'loading' | 'success' | 'error' | 'denied'>('loading')
+  const [geoStatus, setGeoStatus] = useState<'loading' | 'success' | 'error' | 'denied'>(isEditMode ? 'success' : 'loading')
   
   // États pour les tags de lieu
   const [locationTags, setLocationTags] = useState<LocationTag[]>([])
@@ -40,8 +43,11 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
   const [newTagEmoji, setNewTagEmoji] = useState('📍')
   const [creatingTag, setCreatingTag] = useState(false)
 
-  // Récupérer la géolocalisation automatiquement au chargement
+  // Récupérer la géolocalisation automatiquement au chargement (seulement en mode création)
   useEffect(() => {
+    // Ne pas récupérer la géolocalisation en mode édition
+    if (isEditMode) return
+    
     if (!navigator.geolocation) {
       setGeoStatus('error')
       return
@@ -74,7 +80,7 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
-  }, [])
+  }, [isEditMode])
 
   // Charger les tags de lieu de l'utilisateur
   useEffect(() => {
@@ -150,6 +156,41 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData?.user?.id ?? null
 
+    if (isEditMode && editLog) {
+      // Mode édition : update
+      const { error } = await supabase.from('poop_logs').update({
+        date: formData.date,
+        time: formData.time,
+        location: formData.location,
+        address: formData.address || null,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        poop_type: formData.poop_type,
+        size: formData.size,
+        comments: formData.comments || null,
+      }).eq('id', editLog.id)
+
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      // Récupérer le log mis à jour
+      const { data } = await supabase
+        .from('poop_logs')
+        .select('*')
+        .eq('id', editLog.id)
+        .single()
+
+      if (data) {
+        onSuccess(data as PoopLog)
+      }
+      setLoading(false)
+      return
+    }
+
+    // Mode création : insert
     const { error } = await supabase.from('poop_logs').insert({
       user_id: userId,
       date: formData.date,
@@ -426,7 +467,7 @@ export default function AddPoopForm({ onSuccess, onCancel }: AddPoopFormProps) {
           disabled={loading || !formData.location}
           className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Enregistrement...' : 'Enregistrer 💩'}
+          {loading ? 'Enregistrement...' : (isEditMode ? 'Modifier 💩' : 'Enregistrer 💩')}
         </button>
       </div>
     </form>
