@@ -295,6 +295,7 @@ export default function DashboardClient() {
   const [locationTags, setLocationTags] = useState<LocationTag[]>([])
   const [newTrophyPopup, setNewTrophyPopup] = useState<Trophy | null>(null)
   const [trophyQueue, setTrophyQueue] = useState<Trophy[]>([])
+  const [showPatchNotes, setShowPatchNotes] = useState(false)
 
   const accentColor = profile?.accent_color || 'amber'
   const colorClasses = getColorClasses(accentColor)
@@ -619,6 +620,17 @@ export default function DashboardClient() {
 
       {/* Main content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* Banderole Patch Notes */}
+        <button
+          onClick={() => setShowPatchNotes(true)}
+          className="w-full mb-6 py-3 px-4 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] flex items-center justify-center gap-3 relative overflow-hidden group"
+        >
+          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          <span className="text-xl">✨</span>
+          <span>Nouveautés v2.0 - Trophées & Flammes !</span>
+          <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Nouveau</span>
+        </button>
+
         {/* Add button */}
         <button
           onClick={() => setShowForm(true)}
@@ -627,6 +639,103 @@ export default function DashboardClient() {
           <span className="text-2xl">💩</span>
           <span>Nouvelle commission</span>
         </button>
+
+        {/* Popup Patch Notes */}
+        {showPatchNotes && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+            <div className="bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 rounded-3xl shadow-2xl max-w-lg w-full p-1">
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl max-h-[85vh] overflow-y-auto">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center gap-2">
+                      ✨ Patch Notes v2.0
+                    </h2>
+                    <button
+                      onClick={() => setShowPatchNotes(false)}
+                      className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 text-xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Version 2.0 */}
+                  <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                        NOUVEAU
+                      </span>
+                      <span className="text-sm text-zinc-500 dark:text-zinc-400">25 janvier 2026</span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl p-4">
+                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 mb-2">
+                          🏆 Système de Trophées
+                        </h3>
+                        <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
+                          <li>45 trophées à débloquer</li>
+                          <li>5 niveaux de rareté (Commun → Légendaire)</li>
+                          <li>7 catégories : Quantité, Variété, Taille, Streak, Temps, Lieux, Spécial</li>
+                          <li>Trophées secrets à découvrir</li>
+                          <li>Page dédiée pour voir tous les trophées</li>
+                          <li>Popup de célébration à chaque déblocage</li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4">
+                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 mb-2">
+                          🔥 Système de Flammes (Streak)
+                        </h3>
+                        <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
+                          <li>Compteur de jours consécutifs</li>
+                          <li>Flammes visibles après 3 jours</li>
+                          <li>Badge animé dans le header</li>
+                          <li>Classement des utilisateurs en streak</li>
+                          <li>Popup de célébration au déblocage</li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-4">
+                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 mb-2">
+                          👥 Social
+                        </h3>
+                        <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
+                          <li>Liste des utilisateurs en flammes sur l'accueil</li>
+                          <li>Voir qui a débloqué chaque trophée</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Version 1.0 */}
+                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-bold px-2 py-1 rounded-full">
+                        v1.0
+                      </span>
+                      <span className="text-sm text-zinc-500 dark:text-zinc-400">Lancement</span>
+                    </div>
+                    <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
+                      <li>Enregistrement des cacas avec type et taille</li>
+                      <li>Géolocalisation des commissions</li>
+                      <li>Carte mondiale des cacas</li>
+                      <li>Tags de lieux personnalisés</li>
+                      <li>Profil personnalisable (pseudo, emoji, couleur)</li>
+                      <li>Statistiques de base</li>
+                    </ul>
+                  </div>
+
+                  <button
+                    onClick={() => setShowPatchNotes(false)}
+                    className="w-full mt-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-bold rounded-xl hover:from-violet-600 hover:to-fuchsia-600 transition-all shadow-lg"
+                  >
+                    C'est noté ! 👍
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Popup déblocage des flammes */}
         {showStreakPopup && (
