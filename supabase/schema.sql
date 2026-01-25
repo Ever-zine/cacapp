@@ -110,3 +110,27 @@ CREATE POLICY "Users can update own profile" ON user_profiles
   USING (auth.uid() = user_id);
 
 CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
+
+-- Créer la table user_trophies pour les trophées débloqués
+CREATE TABLE user_trophies (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  trophy_id VARCHAR(50) NOT NULL,
+  unlocked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, trophy_id)
+);
+
+-- Activer Row Level Security (RLS) pour user_trophies
+ALTER TABLE user_trophies ENABLE ROW LEVEL SECURITY;
+
+-- Politiques RLS pour user_trophies
+CREATE POLICY "Anyone can view all trophies" ON user_trophies
+  FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can insert own trophies" ON user_trophies
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE INDEX idx_user_trophies_user_id ON user_trophies(user_id);
+CREATE INDEX idx_user_trophies_trophy_id ON user_trophies(trophy_id);
