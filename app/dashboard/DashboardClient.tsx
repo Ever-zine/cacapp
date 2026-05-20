@@ -57,6 +57,29 @@ const calculateStreak = (logs: PoopLog[]): number => {
   return streak
 }
 
+const monthFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' })
+
+const formatMonthKey = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
+const getPreviousMonthRecapPrompt = (logs: PoopLog[], userId: string) => {
+  const now = new Date()
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const previousMonthKey = formatMonthKey(previousMonth)
+  const previousMonthLogs = logs.filter(log => log.date.startsWith(previousMonthKey))
+
+  if (previousMonthLogs.length === 0) return null
+
+  return {
+    storageKey: `cacapp-recap-popup-${userId}-${formatMonthKey(now)}`,
+    monthLabel: monthFormatter.format(previousMonth),
+    total: previousMonthLogs.length,
+  }
+}
+
 // Fonction pour vérifier les trophées débloqués
 const checkTrophies = (
   logs: PoopLog[], 
@@ -283,7 +306,6 @@ export default function DashboardClient() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [showProfileSettings, setShowProfileSettings] = useState(false)
   const [streak, setStreak] = useState(0)
-  const [previousStreak, setPreviousStreak] = useState(0)
   const [showStreakPopup, setShowStreakPopup] = useState(false)
   const [usersOnStreak, setUsersOnStreak] = useState<{
     id: string
@@ -296,6 +318,12 @@ export default function DashboardClient() {
   const [newTrophyPopup, setNewTrophyPopup] = useState<Trophy | null>(null)
   const [trophyQueue, setTrophyQueue] = useState<Trophy[]>([])
   const [showPatchNotes, setShowPatchNotes] = useState(false)
+  const [monthlyRecapPrompt, setMonthlyRecapPrompt] = useState<{
+    storageKey: string
+    monthLabel: string
+    total: number
+  } | null>(null)
+  const [showMonthlyRecapPopup, setShowMonthlyRecapPopup] = useState(false)
 
   const accentColor = profile?.accent_color || 'amber'
   const colorClasses = getColorClasses(accentColor)
@@ -358,7 +386,6 @@ export default function DashboardClient() {
     setLogs(newLogs)
     const newStreak = calculateStreak(newLogs)
     checkStreakUnlock(newStreak, streak)
-    setPreviousStreak(streak)
     setStreak(newStreak)
     setShowForm(false)
     setEditingLog(null)
@@ -374,7 +401,6 @@ export default function DashboardClient() {
     setLogs(newLogs)
     const newStreak = calculateStreak(newLogs)
     checkStreakUnlock(newStreak, streak)
-    setPreviousStreak(streak)
     setStreak(newStreak)
     setShowForm(false)
     setEditingLog(null)
@@ -396,6 +422,18 @@ export default function DashboardClient() {
   }
 
   const router = useRouter()
+
+  const markMonthlyRecapPromptSeen = () => {
+    if (monthlyRecapPrompt) {
+      localStorage.setItem(monthlyRecapPrompt.storageKey, 'seen')
+    }
+    setShowMonthlyRecapPopup(false)
+  }
+
+  const handleOpenMonthlyRecap = () => {
+    markMonthlyRecapPromptSeen()
+    router.push('/recaps')
+  }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer cette entrée ?')) return
@@ -481,7 +519,12 @@ export default function DashboardClient() {
       setLogs(logsData)
       const initialStreak = calculateStreak(logsData)
       setStreak(initialStreak)
-      setPreviousStreak(initialStreak)
+
+      const recapPrompt = getPreviousMonthRecapPrompt(logsData, currentUser.id)
+      if (recapPrompt && localStorage.getItem(recapPrompt.storageKey) !== 'seen') {
+        setMonthlyRecapPrompt(recapPrompt)
+        setShowMonthlyRecapPopup(true)
+      }
 
       // Charger les location tags de l'utilisateur
       const { data: tagsData } = await supabase
@@ -585,16 +628,17 @@ export default function DashboardClient() {
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            {/* Affichage du streak (flammes) */}
-            {streak >= 3 && (
-              <div className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full shadow-lg animate-pulse">
-                <span className="text-lg">🔥</span>
-                <span className="font-bold">{streak}</span>
-              </div>
-            )}
-            
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Lien trophées */}
+            <Link
+              href="/recaps"
+              className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 px-3 py-1.5 rounded-full hover:bg-sky-200 dark:hover:bg-sky-900/50 transition-colors"
+              title="Voir les récaps mensuels"
+            >
+              <span>📊</span>
+              <span className="font-medium text-sm">Récaps</span>
+            </Link>
+
             <Link
               href="/trophies"
               className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-full hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
@@ -627,7 +671,7 @@ export default function DashboardClient() {
         >
           <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           <span className="text-xl">✨</span>
-          <span>Nouveautés v2.0 - Trophées & Flammes !</span>
+          <span>Nouveautés v2.1 - Récaps mensuels !</span>
           <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Nouveau</span>
         </button>
 
@@ -648,7 +692,7 @@ export default function DashboardClient() {
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center gap-2">
-                      ✨ Patch Notes v2.0
+                      ✨ Patch Notes v2.1
                     </h2>
                     <button
                       onClick={() => setShowPatchNotes(false)}
@@ -658,11 +702,35 @@ export default function DashboardClient() {
                     </button>
                   </div>
 
-                  {/* Version 2.0 */}
+                  {/* Version 2.1 */}
                   <div className="mb-8">
                     <div className="flex items-center gap-2 mb-4">
                       <span className="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                         NOUVEAU
+                      </span>
+                      <span className="text-sm text-zinc-500 dark:text-zinc-400">20 mai 2026</span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20 rounded-xl p-4">
+                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 mb-2">
+                          📊 Récaps mensuels
+                        </h3>
+                        <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
+                          <li>Nouvelle page pour revoir tous vos récaps des mois terminés</li>
+                          <li>Stats mois par mois : volume, jours actifs, meilleurs créneaux, lieux et types favoris</li>
+                          <li>Export en image verticale, prête pour les stories ou les messages</li>
+                          <li>Popup mensuelle pour vous inviter à consulter le récap du mois précédent</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Version 2.0 */}
+                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6 mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-bold px-2 py-1 rounded-full">
+                        v2.0
                       </span>
                       <span className="text-sm text-zinc-500 dark:text-zinc-400">25 janvier 2026</span>
                     </div>
@@ -689,7 +757,7 @@ export default function DashboardClient() {
                         <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
                           <li>Compteur de jours consécutifs</li>
                           <li>Flammes visibles après 3 jours</li>
-                          <li>Badge animé dans le header</li>
+                          <li>Stat de streak visible sur le dashboard</li>
                           <li>Classement des utilisateurs en streak</li>
                           <li>Popup de célébration au déblocage</li>
                         </ul>
@@ -700,7 +768,7 @@ export default function DashboardClient() {
                           👥 Social
                         </h3>
                         <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
-                          <li>Liste des utilisateurs en flammes sur l'accueil</li>
+                          <li>Liste des utilisateurs en flammes sur l&apos;accueil</li>
                           <li>Voir qui a débloqué chaque trophée</li>
                         </ul>
                       </div>
@@ -729,7 +797,47 @@ export default function DashboardClient() {
                     onClick={() => setShowPatchNotes(false)}
                     className="w-full mt-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-bold rounded-xl hover:from-violet-600 hover:to-fuchsia-600 transition-all shadow-lg"
                   >
-                    C'est noté ! 👍
+                    C&apos;est noté ! 👍
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Popup récap mensuel */}
+        {showMonthlyRecapPopup && monthlyRecapPrompt && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[65] p-4">
+            <div className="bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-500 rounded-3xl shadow-2xl max-w-sm w-full p-1">
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-7 text-center">
+                <div className="text-7xl mb-4">📊</div>
+                <p className="text-sm font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wide mb-2">
+                  Nouveau récap disponible
+                </p>
+                <h2 className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 mb-3 capitalize">
+                  {monthlyRecapPrompt.monthLabel}
+                </h2>
+                <p className="text-zinc-600 dark:text-zinc-300 mb-2">
+                  Votre mois est prêt à être revu avec ses stats, ses moments forts et une image à partager.
+                </p>
+                <p className="text-4xl font-black text-sky-600 dark:text-sky-400 mb-6">
+                  {monthlyRecapPrompt.total}
+                  <span className="text-base font-bold text-zinc-500 dark:text-zinc-400 ml-2">
+                    passage{monthlyRecapPrompt.total > 1 ? 's' : ''}
+                  </span>
+                </p>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleOpenMonthlyRecap}
+                    className="w-full py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-bold rounded-xl hover:from-sky-600 hover:to-cyan-600 transition-all shadow-lg"
+                  >
+                    Voir mon récap
+                  </button>
+                  <button
+                    onClick={markMonthlyRecapPromptSeen}
+                    className="w-full py-2.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 font-medium"
+                  >
+                    Fermer
                   </button>
                 </div>
               </div>
@@ -756,13 +864,13 @@ export default function DashboardClient() {
                   consécutifs ! Continue comme ça pour maintenir tes flammes 💪
                 </p>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-                  ⚠️ N'oublie pas : il faut au moins 1 caca par jour pour garder ta streak !
+                  ⚠️ N&apos;oublie pas : il faut au moins 1 caca par jour pour garder ta streak !
                 </p>
                 <button
                   onClick={() => setShowStreakPopup(false)}
                   className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:from-orange-600 hover:to-red-600 transition-all shadow-lg"
                 >
-                  C'est parti ! 🚀
+                  C&apos;est parti ! 🚀
                 </button>
               </div>
             </div>
@@ -890,7 +998,7 @@ export default function DashboardClient() {
             <p className={`text-2xl font-bold ${colorClasses.text}`}>
               {logs.filter(l => l.date === new Date().toISOString().split('T')[0]).length}
             </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Aujourd'hui</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Aujourd&apos;hui</p>
           </div>
           <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm">
             <p className={`text-2xl font-bold ${colorClasses.text}`}>
@@ -973,7 +1081,7 @@ export default function DashboardClient() {
           <div className="text-center py-12">
             <p className="text-6xl mb-4">🚽</p>
             <p className="text-zinc-500 dark:text-zinc-400">
-              Aucune entrée pour l'instant.<br />
+              Aucune entrée pour l&apos;instant.<br />
               Ajoutez votre première commission !
             </p>
           </div>
@@ -1007,7 +1115,7 @@ export default function DashboardClient() {
                           </p>
                           {log.comments && (
                             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 italic">
-                              "{log.comments}"
+                              &quot;{log.comments}&quot;
                             </p>
                           )}
                         </div>
