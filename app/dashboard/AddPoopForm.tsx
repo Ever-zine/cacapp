@@ -288,22 +288,22 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog, entryMode = 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-7">
+    <form onSubmit={handleSubmit} className="min-w-0 space-y-7">
       {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">{error}</div>}
 
-      <fieldset>
+      <fieldset className="min-w-0">
         <legend className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">Quand&nbsp;?</legend>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm font-bold">Date
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
+          <label className="min-w-0 text-sm font-bold">Date
             <input type="date" value={formData.date} onChange={event => handleDateChange(event.target.value)} required className="app-field mt-2 px-3" />
           </label>
-          <label className="text-sm font-bold">Heure
+          <label className="min-w-0 text-sm font-bold">Heure
             <input type="time" value={formData.time} onChange={event => setFormData({ ...formData, time: event.target.value })} required className="app-field mt-2 px-3" />
           </label>
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset className="min-w-0">
         <div className="mb-3 flex items-center justify-between gap-3">
           <legend className="text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">Où&nbsp;?</legend>
           {geoStatus === 'loading' && <span className="text-xs font-bold text-amber-600">Localisation…</span>}
@@ -316,7 +316,7 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog, entryMode = 
           <div className="h-12 animate-pulse rounded-2xl bg-[var(--surface-muted)]" />
         ) : (
           <>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <div className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto pb-2">
               {locationTags.map(tag => (
                 <button
                   key={tag.id}
@@ -351,29 +351,29 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog, entryMode = 
           </>
         )}
 
-        <label className="mt-3 block text-sm font-bold">Adresse <span className="font-normal text-[var(--muted)]">· facultatif</span>
+        <label className="mt-3 block min-w-0 text-sm font-bold">Adresse <span className="font-normal text-[var(--muted)]">· facultatif</span>
           <input type="text" value={formData.address} onChange={event => setFormData({ ...formData, address: event.target.value })} placeholder={geoStatus === 'loading' ? 'Recherche de l’adresse…' : 'Adresse ou repère'} className="app-field mt-2" />
         </label>
         {formData.latitude !== null && formData.longitude !== null && <p className="muted-copy mt-2 text-[11px]">Coordonnées · {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}</p>}
       </fieldset>
 
       {isManualLocation && (
-        <fieldset>
+        <fieldset className="min-w-0">
           <legend className="text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">Position précise</legend>
           <p className="muted-copy mb-3 mt-2 text-xs leading-5">Touchez la carte pour placer le point correspondant à cette entrée.</p>
           <LocationPicker latitude={formData.latitude} longitude={formData.longitude} onChange={handleLocationPicked} />
         </fieldset>
       )}
 
-      <fieldset>
+      <fieldset className="min-w-0">
         <legend className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">Type · échelle de Bristol</legend>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
           {POOP_TYPES.map(type => (
             <button
               key={type.value}
               type="button"
               onClick={() => setFormData({ ...formData, poop_type: type.value })}
-              className={`relative min-h-[5.5rem] rounded-2xl border p-3 text-left transition-all ${formData.poop_type === type.value ? 'border-[var(--brand)] bg-[var(--brand-soft)] shadow-sm' : 'border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-muted)]'}`}
+              className={`relative min-w-0 min-h-[5.5rem] rounded-2xl border p-3 text-left transition-all ${formData.poop_type === type.value ? 'border-[var(--brand)] bg-[var(--brand-soft)] shadow-sm' : 'border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-muted)]'}`}
               aria-pressed={formData.poop_type === type.value}
             >
               <span className="text-2xl">{type.emoji}</span>
@@ -385,7 +385,7 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog, entryMode = 
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset className="min-w-0">
         <legend className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">Taille</legend>
         <div className="grid grid-cols-3 gap-2">
           {POOP_SIZES.map(size => (

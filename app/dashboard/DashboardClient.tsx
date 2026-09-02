@@ -66,6 +66,8 @@ const formatMonthKey = (date: Date) => {
   return `${year}-${month}`
 }
 
+const APP_VERSION = '2.2.0'
+
 const getPreviousMonthRecapPrompt = (logs: PoopLog[], userId: string) => {
   const now = new Date()
   const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -640,7 +642,7 @@ export default function DashboardClient() {
                   <h1 className="display-title max-w-xl">Bonjour {profile?.pseudo || 'vous'}.</h1>
                   <p className="muted-copy mt-3 max-w-md text-sm leading-6 sm:text-base">Un petit passage à noter, ou simplement envie de voir où vous en êtes&nbsp;?</p>
                 </div>
-                <button onClick={() => setShowPatchNotes(true)} className="shrink-0 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-extrabold sm:hidden">v2.1 ✦</button>
+                <button onClick={() => setShowPatchNotes(true)} className="shrink-0 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-extrabold sm:hidden">v{APP_VERSION} ✦</button>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
@@ -858,17 +860,17 @@ export default function DashboardClient() {
           <div className="app-modal-sheet p-5 sm:p-7">
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
-                <p className="eyebrow mb-3">Nouveautés · v2.1</p>
+                <p className="eyebrow mb-3">Nouveautés · v{APP_VERSION}</p>
                 <h2 id="patch-title" className="text-3xl font-black tracking-[-0.05em]">CacApp évolue.</h2>
               </div>
               <button onClick={() => setShowPatchNotes(false)} className="icon-button" aria-label="Fermer">×</button>
             </div>
             <div className="space-y-3">
               {[
-                { icon: '◒', title: 'Récaps mensuels', copy: 'Revivez chaque mois avec vos chiffres clés, vos moments forts et une image à partager.' },
-                { icon: '🏆', title: '45 trophées', copy: 'Sept catégories, cinq raretés et quelques secrets à découvrir.' },
-                { icon: '🔥', title: 'Séries & communauté', copy: 'Suivez vos jours consécutifs et découvrez qui entretient ses flammes.' },
-                { icon: '⌖', title: 'Carte mondiale', copy: 'Retrouvez les passages géolocalisés de la communauté.' },
+                { icon: '◒', title: 'Récaps mensuels', copy: 'Revivez chaque mois avec vos chiffres clés, vos moments forts et une image verticale à partager ou télécharger.' },
+                { icon: '⌁', title: 'Analyses détaillées', copy: 'Explorez votre rythme, vos types, vos tailles et vos horaires sur 30 jours, 90 jours ou tout votre historique.' },
+                { icon: '↶', title: 'Entrées passées', copy: 'Ajoutez un ancien passage avec sa date, son heure et un emplacement choisi directement sur la carte.' },
+                { icon: '✦', title: 'Nouvelle interface', copy: 'Profitez d’un design entièrement repensé, plus lisible, plus cohérent et mieux adapté au mobile.' },
               ].map(item => (
                 <div key={item.title} className="paper-card-soft flex gap-4 p-4">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-xl">{item.icon}</span>
