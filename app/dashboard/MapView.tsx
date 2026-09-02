@@ -196,8 +196,9 @@ export default function MapView({ onEdit, currentUserId }: MapViewProps) {
 
   if (!isClient || !L || loading) {
     return (
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-8 text-center">
-        <p className="text-zinc-500 dark:text-zinc-400">Chargement de la carte...</p>
+      <div className="paper-card p-10 text-center">
+        <div className="mx-auto mb-4 h-12 w-12 animate-pulse rounded-2xl bg-[var(--surface-muted)]" />
+        <p className="muted-copy text-sm font-bold">Chargement de la carte…</p>
       </div>
     )
   }
@@ -206,11 +207,12 @@ export default function MapView({ onEdit, currentUserId }: MapViewProps) {
 
   if (clusters.length === 0) {
     return (
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm p-8 text-center">
-        <p className="text-6xl mb-4">🗺️</p>
-        <p className="text-zinc-500 dark:text-zinc-400">
+      <div className="paper-card px-6 py-14 text-center">
+        <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] bg-[var(--brand-soft)] text-4xl">⌖</span>
+        <h2 className="mt-5 text-xl font-black tracking-[-0.03em]">La carte attend vos premiers points</h2>
+        <p className="muted-copy mx-auto mt-2 max-w-sm text-sm leading-6">
           Aucune entrée avec géolocalisation.<br />
-          Activez la localisation pour voir les cacas sur la carte !
+          Activez la localisation pour faire apparaître vos passages.
         </p>
       </div>
     )
@@ -220,14 +222,15 @@ export default function MapView({ onEdit, currentUserId }: MapViewProps) {
   const uniqueUsers = new Set(allLogs.map(l => l.user_id)).size
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm overflow-hidden">
+    <div className="paper-card relative z-0 isolate overflow-hidden">
       <style jsx global>{`
         .user-poop-marker {
           background: transparent !important;
           border: none !important;
         }
         .leaflet-popup-content-wrapper {
-          border-radius: 12px;
+          border-radius: 18px;
+          box-shadow: 0 18px 50px rgba(43, 33, 25, 0.2);
         }
         .leaflet-popup-content {
           margin: 12px;
@@ -236,7 +239,7 @@ export default function MapView({ onEdit, currentUserId }: MapViewProps) {
       <MapContainer
         center={getCenter()}
         zoom={clusters.length === 1 ? 15 : 6}
-        style={{ height: '500px', width: '100%' }}
+        style={{ height: 'min(65dvh, 620px)', minHeight: '420px', width: '100%' }}
         scrollWheelZoom={true}
       >
         <TileLayer
@@ -288,7 +291,7 @@ export default function MapView({ onEdit, currentUserId }: MapViewProps) {
                             </p>
                             <p className="text-xs text-zinc-500">📍 {log.location}</p>
                             {log.comments && (
-                              <p className="text-xs text-zinc-400 italic truncate">"{log.comments}"</p>
+                              <p className="text-xs text-zinc-400 italic truncate">&ldquo;{log.comments}&rdquo;</p>
                             )}
                           </div>
                           {isOwn && onEdit && (
@@ -314,9 +317,10 @@ export default function MapView({ onEdit, currentUserId }: MapViewProps) {
           )
         })}
       </MapContainer>
-      <div className="p-3 bg-zinc-50 dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
-          🗺️ {allLogs.length} caca{allLogs.length > 1 ? 's' : ''} de {uniqueUsers} utilisateur{uniqueUsers > 1 ? 's' : ''} sur la carte
+      <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 sm:px-5">
+        <div><p className="text-sm font-black">La carte de la communauté</p><p className="muted-copy text-xs">Les entrées géolocalisées, regroupées par lieu</p></div>
+        <p className="shrink-0 rounded-full bg-[var(--brand-soft)] px-3 py-1.5 text-xs font-black text-[var(--brand)]">
+          {allLogs.length} · {uniqueUsers} membre{uniqueUsers > 1 ? 's' : ''}
         </p>
       </div>
     </div>

@@ -54,119 +54,64 @@ export default function ProfileSettings({ profile, onSave, onCancel }: ProfileSe
   const currentColor = ACCENT_COLORS.find(c => c.value === formData.accent_color) || ACCENT_COLORS[0]
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
+    <form onSubmit={handleSubmit} className="space-y-7">
+      {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">{error}</div>}
 
-      {/* Pseudo */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          ✏️ Pseudo
-        </label>
-        <input
-          type="text"
-          value={formData.pseudo}
-          onChange={(e) => setFormData({ ...formData, pseudo: e.target.value })}
-          placeholder="Votre pseudo..."
-          maxLength={50}
-          className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-600 rounded-xl focus:ring-2 focus:border-transparent dark:bg-zinc-800 dark:text-white"
-          style={{ '--tw-ring-color': currentColor.hex } as React.CSSProperties}
-        />
+      <div className="flex items-center gap-4 rounded-3xl p-5 text-white" style={{ background: `linear-gradient(135deg, ${currentColor.hex}, #2b2119)` }}>
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.65rem] bg-white/16 text-4xl ring-1 ring-white/25">{formData.avatar_emoji}</div>
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-white/60">Votre identité</p>
+          <p className="mt-2 truncate text-2xl font-black tracking-[-0.04em]">{formData.pseudo || 'Anonyme'}</p>
+          <p className="mt-1 text-sm font-semibold text-white/70">Accent {currentColor.label.toLowerCase()}</p>
+        </div>
       </div>
 
-      {/* Avatar Emoji */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          🎭 Avatar (emoji)
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {AVATAR_EMOJIS.map((emoji) => (
+      <label className="block text-sm font-black">Votre pseudo
+        <input type="text" value={formData.pseudo} onChange={event => setFormData({ ...formData, pseudo: event.target.value })} placeholder="Comment doit-on vous appeler ?" maxLength={50} className="app-field mt-2" />
+      </label>
+
+      <fieldset>
+        <legend className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">Choisir un avatar</legend>
+        <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+          {AVATAR_EMOJIS.map(emoji => (
             <button
               key={emoji}
               type="button"
               onClick={() => setFormData({ ...formData, avatar_emoji: emoji })}
-              className={`w-12 h-12 text-2xl rounded-xl border-2 transition-all hover:scale-110 ${
-                formData.avatar_emoji === emoji
-                  ? 'border-current shadow-lg scale-110'
-                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-              }`}
-              style={formData.avatar_emoji === emoji ? { borderColor: currentColor.hex, backgroundColor: `${currentColor.hex}20` } : {}}
-            >
-              {emoji}
-            </button>
+              className={`aspect-square rounded-2xl border text-2xl transition-all ${formData.avatar_emoji === emoji ? 'scale-105 shadow-sm' : 'border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-muted)]'}`}
+              style={formData.avatar_emoji === emoji ? { borderColor: currentColor.hex, backgroundColor: `${currentColor.hex}20` } : undefined}
+              aria-pressed={formData.avatar_emoji === emoji}
+              aria-label={`Avatar ${emoji}`}
+            >{emoji}</button>
           ))}
         </div>
-      </div>
+      </fieldset>
 
-      {/* Couleur d'accentuation */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          🎨 Couleur d'accentuation
-        </label>
-        <div className="grid grid-cols-6 gap-2">
-          {ACCENT_COLORS.map((color) => (
+      <fieldset>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <legend className="text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">Couleur d’accent</legend>
+          <span className="text-xs font-black" style={{ color: currentColor.hex }}>{currentColor.label}</span>
+        </div>
+        <div className="grid grid-cols-9 gap-2">
+          {ACCENT_COLORS.map(color => (
             <button
               key={color.value}
               type="button"
               onClick={() => setFormData({ ...formData, accent_color: color.value })}
               title={color.label}
-              className={`w-full aspect-square rounded-xl border-2 transition-all hover:scale-110 ${
-                formData.accent_color === color.value
-                  ? 'border-zinc-800 dark:border-white scale-110 ring-2 ring-offset-2'
-                  : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-600'
-              }`}
-              style={{ 
-                backgroundColor: color.hex,
-                '--tw-ring-color': color.hex,
-              } as React.CSSProperties}
+              aria-label={`Couleur ${color.label}`}
+              aria-pressed={formData.accent_color === color.value}
+              className={`aspect-square rounded-full border-[3px] border-[var(--surface)] shadow-sm transition-transform hover:scale-110 ${formData.accent_color === color.value ? 'scale-110 ring-2 ring-[var(--foreground)] ring-offset-2 ring-offset-[var(--surface)]' : ''}`}
+              style={{ backgroundColor: color.hex }}
             />
           ))}
         </div>
-        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 text-center">
-          Sélectionné : <span style={{ color: currentColor.hex }} className="font-semibold">{currentColor.label}</span>
-        </p>
-      </div>
+      </fieldset>
 
-      {/* Aperçu */}
-      <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">Aperçu :</p>
-        <div className="flex items-center gap-3">
-          <div 
-            className="w-14 h-14 rounded-full flex items-center justify-center text-3xl"
-            style={{ backgroundColor: `${currentColor.hex}20`, border: `2px solid ${currentColor.hex}` }}
-          >
-            {formData.avatar_emoji}
-          </div>
-          <div>
-            <p className="font-bold text-zinc-800 dark:text-zinc-100">
-              {formData.pseudo || 'Anonyme'}
-            </p>
-            <p className="text-sm" style={{ color: currentColor.hex }}>
-              Couleur {currentColor.label}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Boutons */}
-      <div className="flex gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 py-3 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 py-3 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ backgroundColor: currentColor.hex }}
-        >
-          {loading ? 'Enregistrement...' : 'Enregistrer'}
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <button type="button" onClick={onCancel} className="app-button-secondary">Annuler</button>
+        <button type="submit" disabled={loading} className="app-button-primary" style={{ backgroundColor: currentColor.hex }}>
+          {loading ? 'Enregistrement…' : 'Enregistrer'}
         </button>
       </div>
     </form>

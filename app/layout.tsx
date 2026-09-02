@@ -13,8 +13,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CacApp - Historique de vos passages aux toilettes",
-  description: "Suivez et analysez vos habitudes intestinales avec CacApp",
+  metadataBase: new URL("https://cacapp.app"),
+  title: "CacApp — Le journal de vos passages",
+  description: "Notez vos passages, suivez votre rythme et collectionnez vos exploits avec CacApp.",
+  openGraph: {
+    title: "CacApp — Le journal du trône",
+    description: "Suivez. Comprenez. Progressez.",
+    type: "website",
+    locale: "fr_FR",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "CacApp — Le journal du trône" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CacApp — Le journal du trône",
+    description: "Suivez. Comprenez. Progressez.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({
@@ -23,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

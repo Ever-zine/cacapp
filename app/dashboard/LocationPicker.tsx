@@ -27,7 +27,7 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
   const center = selectedPosition ?? FRANCE_CENTER
 
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-300 dark:border-zinc-600">
+    <div className="relative z-0 isolate overflow-hidden rounded-2xl border border-[var(--border)] shadow-sm">
       <MapContainer
         center={center}
         zoom={selectedPosition ? 15 : 5}
@@ -43,7 +43,7 @@ export default function LocationPicker({ latitude, longitude, onChange }: Locati
           <CircleMarker
             center={selectedPosition}
             radius={10}
-            pathOptions={{ color: '#d97706', fillColor: '#f59e0b', fillOpacity: 0.85, weight: 3 }}
+            pathOptions={{ color: '#6f351d', fillColor: '#b9663c', fillOpacity: 0.85, weight: 3 }}
           />
         )}
       </MapContainer>
