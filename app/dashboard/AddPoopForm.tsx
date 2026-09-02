@@ -3,14 +3,31 @@
 import { useState, useEffect } from 'react'
 import { PoopLog, PoopType, POOP_TYPES, PoopSize, POOP_SIZES, LocationTag } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
+import dynamic from 'next/dynamic'
+
+const LocationPicker = dynamic(() => import('./LocationPicker'), {
+  ssr: false,
+  loading: () => <div className="h-[260px] rounded-lg bg-zinc-100 dark:bg-zinc-800 animate-pulse" />,
+})
 
 interface AddPoopFormProps {
   onSuccess: (log: PoopLog) => void
   onCancel: () => void
   editLog?: PoopLog | null // Log à éditer (optionnel)
+  entryMode?: 'current' | 'backdated'
 }
 
-export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFormProps) {
+const getLocalDate = (offsetDays = 0) => {
+  const date = new Date()
+  date.setHours(0, 0, 0, 0)
+  date.setDate(date.getDate() + offsetDays)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+export default function AddPoopForm({ onSuccess, onCancel, editLog, entryMode = 'current' }: AddPoopFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
@@ -18,7 +35,7 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
   
   // Valeurs par défaut : maintenant ou valeurs du log à éditer
   const now = new Date()
-  const defaultDate = editLog?.date || now.toISOString().split('T')[0]
+  const defaultDate = editLog?.date || (entryMode === 'backdated' ? getLocalDate(-1) : getLocalDate())
   const defaultTime = editLog?.time?.slice(0, 5) || now.toTimeString().slice(0, 5)
 
   const [formData, setFormData] = useState({
@@ -33,7 +50,13 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
     comments: editLog?.comments || '',
   })
 
-  const [geoStatus, setGeoStatus] = useState<'loading' | 'success' | 'error' | 'denied'>(isEditMode ? 'success' : 'loading')
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'denied'>(isEditMode || entryMode === 'backdated' ? 'idle' : 'loading')
+  const [positionSource, setPositionSource] = useState<'none' | 'automatic' | 'manual'>(
+    editLog?.latitude !== null && editLog?.latitude !== undefined && editLog?.longitude !== null && editLog?.longitude !== undefined
+      ? 'manual'
+      : 'none'
+  )
+  const isManualLocation = isEditMode || entryMode === 'backdated' || formData.date < getLocalDate()
   
   // États pour les tags de lieu
   const [locationTags, setLocationTags] = useState<LocationTag[]>([])
@@ -43,20 +66,25 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
   const [newTagEmoji, setNewTagEmoji] = useState('📍')
   const [creatingTag, setCreatingTag] = useState(false)
 
-  // Récupérer la géolocalisation automatiquement au chargement (seulement en mode création)
+  // Une entrée existante ou passée doit être placée manuellement, jamais avec la position actuelle.
   useEffect(() => {
-    // Ne pas récupérer la géolocalisation en mode édition
-    if (isEditMode) return
+    if (isManualLocation) return
+
+    if (positionSource !== 'none') return
     
     if (!navigator.geolocation) {
       setGeoStatus('error')
       return
     }
 
+    let cancelled = false
+    setGeoStatus('loading')
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        if (cancelled) return
         const { latitude, longitude } = position.coords
         setFormData(prev => ({ ...prev, latitude, longitude }))
+        setGeoStatus('success')
         
         // Reverse geocoding pour obtenir l'adresse
         try {
@@ -65,22 +93,66 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
             { headers: { 'Accept-Language': 'fr' } }
           )
           const data = await response.json()
-          if (data.display_name) {
+          if (!cancelled && data.display_name) {
             setFormData(prev => ({ ...prev, address: data.display_name }))
             setGeoStatus('success')
           }
         } catch {
           // Si le reverse geocoding échoue, on garde juste les coordonnées
-          setGeoStatus('success')
+          if (!cancelled) setGeoStatus('success')
+        } finally {
+          if (!cancelled) setPositionSource('automatic')
         }
       },
       (error) => {
+        if (cancelled) return
         console.error('Erreur de géolocalisation:', error)
         setGeoStatus(error.code === 1 ? 'denied' : 'error')
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
-  }, [isEditMode])
+
+    return () => {
+      cancelled = true
+    }
+  }, [isManualLocation, positionSource])
+
+  const handleLocationPicked = async (latitude: number, longitude: number) => {
+    setFormData(prev => ({ ...prev, latitude, longitude }))
+    setPositionSource('manual')
+    setGeoStatus('success')
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+        { headers: { 'Accept-Language': 'fr' } }
+      )
+      const data = await response.json()
+      if (data.display_name) {
+        setFormData(prev => prev.latitude === latitude && prev.longitude === longitude
+          ? { ...prev, address: data.display_name }
+          : prev)
+      }
+    } catch {
+      // Le point sélectionné reste exploitable même sans adresse trouvée.
+    }
+  }
+
+  const handleDateChange = (date: string) => {
+    const becomesBackdated = date < getLocalDate()
+    setFormData(prev => ({
+      ...prev,
+      date,
+      ...(becomesBackdated && positionSource === 'automatic'
+        ? { latitude: null, longitude: null, address: '' }
+        : {}),
+    }))
+
+    if (becomesBackdated) {
+      if (positionSource === 'automatic') setPositionSource('none')
+      setGeoStatus('idle')
+    }
+  }
 
   // Charger les tags de lieu de l'utilisateur
   useEffect(() => {
@@ -156,9 +228,15 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData?.user?.id ?? null
 
+    if (!userId) {
+      setError('Utilisateur non connecté')
+      setLoading(false)
+      return
+    }
+
     if (isEditMode && editLog) {
       // Mode édition : update
-      const { error } = await supabase.from('poop_logs').update({
+      const { data, error } = await supabase.from('poop_logs').update({
         date: formData.date,
         time: formData.time,
         location: formData.location,
@@ -168,20 +246,13 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
         poop_type: formData.poop_type,
         size: formData.size,
         comments: formData.comments || null,
-      }).eq('id', editLog.id)
+      }).eq('id', editLog.id).eq('user_id', userId).select().single()
 
       if (error) {
         setError(error.message)
         setLoading(false)
         return
       }
-
-      // Récupérer le log mis à jour
-      const { data } = await supabase
-        .from('poop_logs')
-        .select('*')
-        .eq('id', editLog.id)
-        .single()
 
       if (data) {
         onSuccess(data as PoopLog)
@@ -191,7 +262,7 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
     }
 
     // Mode création : insert
-    const { error } = await supabase.from('poop_logs').insert({
+    const { data, error } = await supabase.from('poop_logs').insert({
       user_id: userId,
       date: formData.date,
       time: formData.time,
@@ -202,21 +273,13 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
       poop_type: formData.poop_type,
       size: formData.size,
       comments: formData.comments || null,
-    })
+    }).select().single()
 
     if (error) {
       setError(error.message)
       setLoading(false)
       return
     }
-
-    // Récupérer le log créé
-    const { data } = await supabase
-      .from('poop_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
 
     if (data) {
       onSuccess(data as PoopLog)
@@ -240,7 +303,7 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
           <input
             type="date"
             value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            onChange={(e) => handleDateChange(e.target.value)}
             required
             className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-zinc-800 dark:text-white"
           />
@@ -355,12 +418,12 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
 
       <div>
         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-          🗺️ Adresse (géolocalisation)
+          🗺️ Adresse
           {geoStatus === 'loading' && (
             <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">⏳ Localisation en cours...</span>
           )}
           {geoStatus === 'success' && (
-            <span className="ml-2 text-xs text-green-600 dark:text-green-400">✓ Localisé</span>
+            <span className="ml-2 text-xs text-green-600 dark:text-green-400">✓ Position enregistrée</span>
           )}
           {geoStatus === 'denied' && (
             <span className="ml-2 text-xs text-red-600 dark:text-red-400">⚠️ Accès refusé</span>
@@ -376,12 +439,28 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
           placeholder={geoStatus === 'loading' ? 'Récupération de l\'adresse...' : 'Adresse (optionnel)'}
           className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-zinc-800 dark:text-white"
         />
-        {formData.latitude && formData.longitude && (
+        {formData.latitude !== null && formData.longitude !== null && (
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             📌 {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
           </p>
         )}
       </div>
+
+      {isManualLocation && (
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            📌 Position de l&apos;entrée
+          </label>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+            Cliquez sur la carte pour placer le point où l&apos;entrée a eu lieu.
+          </p>
+          <LocationPicker
+            latitude={formData.latitude}
+            longitude={formData.longitude}
+            onChange={handleLocationPicked}
+          />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
@@ -423,7 +502,7 @@ export default function AddPoopForm({ onSuccess, onCancel, editLog }: AddPoopFor
             className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
           <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
-            {POOP_SIZES.map((size, index) => (
+            {POOP_SIZES.map((size) => (
               <span
                 key={size.value}
                 className={`text-center cursor-pointer transition-all ${

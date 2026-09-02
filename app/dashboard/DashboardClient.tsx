@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { PoopLog, POOP_TYPES, UserProfile, ACCENT_COLORS, AccentColor, TROPHIES, Trophy, TrophyId, TROPHY_RARITIES, LocationTag } from '@/lib/types'
 import AddPoopForm from './AddPoopForm'
+import AnalyticsDashboard from './AnalyticsDashboard'
 import MapView from './MapView'
 import ProfileSettings from './ProfileSettings'
 import { createClient } from '@/lib/supabase/client'
@@ -299,10 +300,11 @@ export default function DashboardClient() {
   const [logs, setLogs] = useState<PoopLog[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingLog, setEditingLog] = useState<PoopLog | null>(null)
+  const [entryMode, setEntryMode] = useState<'current' | 'backdated'>('current')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'list' | 'map'>('list')
+  const [activeTab, setActiveTab] = useState<'list' | 'analytics' | 'map'>('list')
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [showProfileSettings, setShowProfileSettings] = useState(false)
   const [streak, setStreak] = useState(0)
@@ -389,6 +391,7 @@ export default function DashboardClient() {
     setStreak(newStreak)
     setShowForm(false)
     setEditingLog(null)
+    setEntryMode('current')
 
     // Vérifier les nouveaux trophées
     if (user) {
@@ -404,6 +407,7 @@ export default function DashboardClient() {
     setStreak(newStreak)
     setShowForm(false)
     setEditingLog(null)
+    setEntryMode('current')
 
     // Vérifier les nouveaux trophées
     if (user) {
@@ -413,12 +417,14 @@ export default function DashboardClient() {
 
   const handleEdit = (log: PoopLog) => {
     setEditingLog(log)
+    setEntryMode('current')
     setShowForm(true)
   }
 
   const handleCloseForm = () => {
     setShowForm(false)
     setEditingLog(null)
+    setEntryMode('current')
   }
 
   const router = useRouter()
@@ -677,11 +683,25 @@ export default function DashboardClient() {
 
         {/* Add button */}
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setEditingLog(null)
+            setEntryMode('current')
+            setShowForm(true)
+          }}
           className={`w-full mb-8 py-4 ${colorClasses.bg} ${colorClasses.hover} text-white font-semibold rounded-2xl shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-3`}
         >
           <span className="text-2xl">💩</span>
           <span>Nouvelle commission</span>
+        </button>
+        <button
+          onClick={() => {
+            setEditingLog(null)
+            setEntryMode('backdated')
+            setShowForm(true)
+          }}
+          className="w-full -mt-5 mb-8 py-2 text-sm text-zinc-600 dark:text-zinc-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+        >
+          ↩️ Ajouter une entrée passée
         </button>
 
         {/* Popup Patch Notes */}
@@ -969,7 +989,7 @@ export default function DashboardClient() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                    {editingLog ? 'Modifier l\'entrée' : 'Nouvelle entrée'}
+                    {editingLog ? 'Modifier l\'entrée' : entryMode === 'backdated' ? 'Ajouter une entrée passée' : 'Nouvelle entrée'}
                   </h2>
                   <button
                     onClick={handleCloseForm}
@@ -982,6 +1002,7 @@ export default function DashboardClient() {
                   onSuccess={editingLog ? handleLogUpdated : handleLogAdded} 
                   onCancel={handleCloseForm}
                   editLog={editingLog}
+                  entryMode={entryMode}
                 />
               </div>
             </div>
@@ -1060,6 +1081,16 @@ export default function DashboardClient() {
             📋 Liste
           </button>
           <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+              activeTab === 'analytics'
+                ? `${colorClasses.bg} text-white shadow-md`
+                : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+            }`}
+          >
+            📈 Analyses
+          </button>
+          <button
             onClick={() => setActiveTab('map')}
             className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
               activeTab === 'map'
@@ -1074,6 +1105,10 @@ export default function DashboardClient() {
         {/* Map View */}
         {activeTab === 'map' && (
           <MapView onEdit={handleEdit} currentUserId={user?.id} />
+        )}
+
+        {activeTab === 'analytics' && (
+          <AnalyticsDashboard logs={logs} accentHex={currentColorHex} />
         )}
 
         {/* Logs list */}
