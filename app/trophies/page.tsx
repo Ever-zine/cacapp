@@ -98,58 +98,55 @@ export default function TrophiesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-900 dark:to-zinc-800">
+      <div className="app-page flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">🏆</div>
-          <p className="text-zinc-600 dark:text-zinc-400">Chargement des trophées...</p>
+          <div className="mx-auto mb-4 flex h-16 w-16 animate-pulse items-center justify-center rounded-3xl bg-[var(--brand-soft)] text-3xl">🏆</div>
+          <p className="muted-copy text-sm font-bold">Ouverture de la vitrine…</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 dark:from-zinc-900 dark:to-zinc-800">
-      {/* Header */}
-      <header className="bg-white dark:bg-zinc-900 shadow-sm sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 flex items-center gap-2">
-            ← Retour
+    <div className="app-page pb-10">
+      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_88%,transparent)] backdrop-blur-xl">
+        <div className="app-container flex h-[4.5rem] items-center justify-between">
+          <Link href="/dashboard" className="app-button-secondary min-h-10 rounded-full px-3 text-sm">
+            ← <span className="hidden sm:inline">Retour</span>
           </Link>
-          <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
-            🏆 Trophées
+          <h1 className="flex items-center gap-2 text-lg font-black tracking-[-0.04em]">
+            <span>🏆</span> Trophées
           </h1>
-          <div className="text-sm text-zinc-500 dark:text-zinc-400">
+          <div className="rounded-full bg-[var(--brand-soft)] px-3 py-1.5 text-xs font-black text-[var(--brand)]">
             {unlockedCount}/{totalCount}
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Progress */}
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-sm mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">Votre progression</h2>
-            <span className="text-2xl font-bold text-amber-600">{Math.round((unlockedCount / totalCount) * 100)}%</span>
+      <main className="app-container py-7 sm:py-10">
+        <section className="mb-8 overflow-hidden rounded-[1.75rem] bg-[#2b2119] p-6 text-[#fff8ee] shadow-lg sm:p-8">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div><p className="text-xs font-black uppercase tracking-[0.14em] text-[#e8a47e]">Votre collection</p><h2 className="mt-2 text-3xl font-black tracking-[-0.05em]">{unlockedCount} exploits accomplis.</h2></div>
+            <span className="text-3xl font-black text-[#e8a47e]">{Math.round((unlockedCount / totalCount) * 100)}%</span>
           </div>
-          <div className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+          <div className="h-3 overflow-hidden rounded-full bg-white/10">
             <div 
-              className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-all duration-500"
+              className="h-full rounded-full bg-gradient-to-r from-[#e8a47e] to-[#f2c48e] transition-all duration-500"
               style={{ width: `${(unlockedCount / totalCount) * 100}%` }}
             />
           </div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">
-            {unlockedCount} trophée{unlockedCount > 1 ? 's' : ''} débloqué{unlockedCount > 1 ? 's' : ''} sur {totalCount}
+          <p className="mt-3 text-sm font-semibold text-white/55">
+            Encore {Math.max(totalCount - unlockedCount, 0)} trophée{totalCount - unlockedCount > 1 ? 's' : ''} visible{totalCount - unlockedCount > 1 ? 's' : ''} à décrocher
           </p>
-        </div>
+        </section>
 
-        {/* Category filter */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+            className={`min-h-11 whitespace-nowrap rounded-full border px-4 text-sm font-black transition-all ${
               selectedCategory === 'all'
-                ? 'bg-amber-600 text-white shadow-md'
-                : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                ? 'border-[#2b2119] bg-[#2b2119] text-white shadow-md'
+                : 'border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]'
             }`}
           >
             Tous
@@ -158,10 +155,10 @@ export default function TrophiesPage() {
             <button
               key={cat.value}
               onClick={() => setSelectedCategory(cat.value)}
-              className={`px-4 py-2 rounded-full whitespace-nowrap transition-all flex items-center gap-1 ${
+              className={`flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border px-4 text-sm font-black transition-all ${
                 selectedCategory === cat.value
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                  ? 'border-[#2b2119] bg-[#2b2119] text-white shadow-md'
+                  : 'border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]'
               }`}
             >
               {cat.emoji} {cat.label}
@@ -169,8 +166,7 @@ export default function TrophiesPage() {
           ))}
         </div>
 
-        {/* Trophies grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
           {filteredTrophies.map(trophy => {
             const isUnlocked = userTrophies.includes(trophy.id)
             const rarityInfo = getRarityInfo(trophy.rarity)
@@ -180,19 +176,19 @@ export default function TrophiesPage() {
               <button
                 key={trophy.id}
                 onClick={() => setSelectedTrophy(trophy)}
-                className={`p-4 rounded-2xl text-left transition-all hover:scale-[1.02] ${
+                className={`min-h-48 rounded-3xl border p-4 text-left transition-all hover:-translate-y-0.5 sm:p-5 ${
                   isUnlocked 
-                    ? `${rarityInfo.bgColor} shadow-md` 
-                    : 'bg-white/50 dark:bg-zinc-900/50'
+                    ? `${rarityInfo.bgColor} border-transparent shadow-sm` 
+                    : 'border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_58%,transparent)]'
                 }`}
               >
-                <div className={`text-4xl mb-2 ${!isUnlocked && !isSecret ? 'grayscale opacity-50' : ''}`}>
+                <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/55 text-3xl shadow-sm dark:bg-black/15 ${!isUnlocked && !isSecret ? 'grayscale opacity-45' : ''}`}>
                   {isSecret ? '❓' : trophy.emoji}
                 </div>
-                <h3 className={`font-bold text-sm ${isUnlocked ? 'text-zinc-800 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-600'}`}>
+                <h3 className={`text-sm font-black ${isUnlocked ? 'text-zinc-800 dark:text-zinc-100' : 'text-[var(--muted)] opacity-60'}`}>
                   {isSecret ? '???' : trophy.name}
                 </h3>
-                <p className={`text-xs mt-1 ${isUnlocked ? 'text-zinc-600 dark:text-zinc-400' : 'text-zinc-400 dark:text-zinc-600'}`}>
+                <p className={`mt-1 text-xs leading-4 ${isUnlocked ? 'text-zinc-600 dark:text-zinc-400' : 'text-[var(--muted)] opacity-50'}`}>
                   {isSecret ? 'Trophée secret' : trophy.description}
                 </p>
                 <div className="flex items-center justify-between mt-2">
@@ -225,27 +221,27 @@ export default function TrophiesPage() {
         </div>
       </main>
 
-      {/* Trophy detail modal */}
       {selectedTrophy && (
         <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="app-modal-backdrop"
           onClick={() => setSelectedTrophy(null)}
+          role="dialog"
+          aria-modal="true"
         >
           <div 
-            className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto"
+            className="app-modal-sheet max-w-md p-6 sm:p-8"
             onClick={e => e.stopPropagation()}
           >
-            <div className="p-6">
               <div className="text-center mb-6">
                 <div className={`text-6xl mb-4 ${
                   !userTrophies.includes(selectedTrophy.id) && !selectedTrophy.secret ? 'grayscale opacity-50' : ''
                 }`}>
                   {selectedTrophy.secret && !userTrophies.includes(selectedTrophy.id) ? '❓' : selectedTrophy.emoji}
                 </div>
-                <h2 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+                <h2 className="text-2xl font-black tracking-[-0.04em]">
                   {selectedTrophy.secret && !userTrophies.includes(selectedTrophy.id) ? '???' : selectedTrophy.name}
                 </h2>
-                <p className="text-zinc-600 dark:text-zinc-400 mt-2">
+                <p className="muted-copy mt-2 text-sm leading-6">
                   {selectedTrophy.secret && !userTrophies.includes(selectedTrophy.id) ? 'Trophée secret - Continuez à jouer pour le découvrir !' : selectedTrophy.description}
                 </p>
                 <span className={`inline-block mt-3 text-sm px-3 py-1 rounded-full ${getRarityInfo(selectedTrophy.rarity).bgColor} ${getRarityInfo(selectedTrophy.rarity).color}`}>
@@ -254,13 +250,13 @@ export default function TrophiesPage() {
               </div>
 
               {/* Users who unlocked */}
-              <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4">
-                <h3 className="font-bold text-zinc-800 dark:text-zinc-100 mb-3">
+              <div className="border-t border-[var(--border)] pt-4">
+                <h3 className="mb-3 font-black">
                   Débloqué par ({selectedTrophy.unlockedBy.length})
                 </h3>
                 {selectedTrophy.unlockedBy.length === 0 ? (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-4">
-                    Personne n'a encore débloqué ce trophée.<br />
+                  <p className="muted-copy py-4 text-center text-sm">
+                    Personne n&apos;a encore débloqué ce trophée.<br />
                     Soyez le premier ! 🏆
                   </p>
                 ) : (
@@ -292,13 +288,7 @@ export default function TrophiesPage() {
                 )}
               </div>
 
-              <button
-                onClick={() => setSelectedTrophy(null)}
-                className="w-full mt-6 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-              >
-                Fermer
-              </button>
-            </div>
+              <button onClick={() => setSelectedTrophy(null)} className="app-button-secondary mt-6 w-full">Fermer</button>
           </div>
         </div>
       )}

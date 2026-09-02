@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
-import { PoopLog, POOP_TYPES, UserProfile, ACCENT_COLORS, AccentColor, TROPHIES, Trophy, TrophyId, TROPHY_RARITIES, LocationTag } from '@/lib/types'
+import { PoopLog, POOP_TYPES, UserProfile, ACCENT_COLORS, TROPHIES, Trophy, TrophyId, TROPHY_RARITIES, LocationTag } from '@/lib/types'
 import AddPoopForm from './AddPoopForm'
+import AnalyticsDashboard from './AnalyticsDashboard'
 import MapView from './MapView'
 import ProfileSettings from './ProfileSettings'
 import { createClient } from '@/lib/supabase/client'
@@ -271,38 +272,15 @@ const checkTrophies = (
   return newTrophies
 }
 
-// Fonction pour obtenir les classes de couleur dynamiques
-const getColorClasses = (color: AccentColor) => {
-  const colorMap: Record<AccentColor, { bg: string; hover: string; text: string; gradient: string }> = {
-    amber: { bg: 'bg-amber-600', hover: 'hover:bg-amber-700', text: 'text-amber-600', gradient: 'from-amber-50 to-orange-100' },
-    red: { bg: 'bg-red-600', hover: 'hover:bg-red-700', text: 'text-red-600', gradient: 'from-red-50 to-rose-100' },
-    orange: { bg: 'bg-orange-600', hover: 'hover:bg-orange-700', text: 'text-orange-600', gradient: 'from-orange-50 to-amber-100' },
-    yellow: { bg: 'bg-yellow-500', hover: 'hover:bg-yellow-600', text: 'text-yellow-600', gradient: 'from-yellow-50 to-amber-100' },
-    lime: { bg: 'bg-lime-600', hover: 'hover:bg-lime-700', text: 'text-lime-600', gradient: 'from-lime-50 to-green-100' },
-    green: { bg: 'bg-green-600', hover: 'hover:bg-green-700', text: 'text-green-600', gradient: 'from-green-50 to-emerald-100' },
-    emerald: { bg: 'bg-emerald-600', hover: 'hover:bg-emerald-700', text: 'text-emerald-600', gradient: 'from-emerald-50 to-teal-100' },
-    teal: { bg: 'bg-teal-600', hover: 'hover:bg-teal-700', text: 'text-teal-600', gradient: 'from-teal-50 to-cyan-100' },
-    cyan: { bg: 'bg-cyan-600', hover: 'hover:bg-cyan-700', text: 'text-cyan-600', gradient: 'from-cyan-50 to-sky-100' },
-    sky: { bg: 'bg-sky-600', hover: 'hover:bg-sky-700', text: 'text-sky-600', gradient: 'from-sky-50 to-blue-100' },
-    blue: { bg: 'bg-blue-600', hover: 'hover:bg-blue-700', text: 'text-blue-600', gradient: 'from-blue-50 to-indigo-100' },
-    indigo: { bg: 'bg-indigo-600', hover: 'hover:bg-indigo-700', text: 'text-indigo-600', gradient: 'from-indigo-50 to-violet-100' },
-    violet: { bg: 'bg-violet-600', hover: 'hover:bg-violet-700', text: 'text-violet-600', gradient: 'from-violet-50 to-purple-100' },
-    purple: { bg: 'bg-purple-600', hover: 'hover:bg-purple-700', text: 'text-purple-600', gradient: 'from-purple-50 to-fuchsia-100' },
-    fuchsia: { bg: 'bg-fuchsia-600', hover: 'hover:bg-fuchsia-700', text: 'text-fuchsia-600', gradient: 'from-fuchsia-50 to-pink-100' },
-    pink: { bg: 'bg-pink-600', hover: 'hover:bg-pink-700', text: 'text-pink-600', gradient: 'from-pink-50 to-rose-100' },
-    rose: { bg: 'bg-rose-600', hover: 'hover:bg-rose-700', text: 'text-rose-600', gradient: 'from-rose-50 to-red-100' },
-  }
-  return colorMap[color] || colorMap.amber
-}
-
 export default function DashboardClient() {
   const [logs, setLogs] = useState<PoopLog[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingLog, setEditingLog] = useState<PoopLog | null>(null)
+  const [entryMode, setEntryMode] = useState<'current' | 'backdated'>('current')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'list' | 'map'>('list')
+  const [activeTab, setActiveTab] = useState<'list' | 'analytics' | 'map'>('list')
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [showProfileSettings, setShowProfileSettings] = useState(false)
   const [streak, setStreak] = useState(0)
@@ -326,7 +304,6 @@ export default function DashboardClient() {
   const [showMonthlyRecapPopup, setShowMonthlyRecapPopup] = useState(false)
 
   const accentColor = profile?.accent_color || 'amber'
-  const colorClasses = getColorClasses(accentColor)
   const currentColorHex = ACCENT_COLORS.find(c => c.value === accentColor)?.hex || '#f59e0b'
 
   // Vérifier si on vient de débloquer les flammes
@@ -389,6 +366,7 @@ export default function DashboardClient() {
     setStreak(newStreak)
     setShowForm(false)
     setEditingLog(null)
+    setEntryMode('current')
 
     // Vérifier les nouveaux trophées
     if (user) {
@@ -404,6 +382,7 @@ export default function DashboardClient() {
     setStreak(newStreak)
     setShowForm(false)
     setEditingLog(null)
+    setEntryMode('current')
 
     // Vérifier les nouveaux trophées
     if (user) {
@@ -413,12 +392,14 @@ export default function DashboardClient() {
 
   const handleEdit = (log: PoopLog) => {
     setEditingLog(log)
+    setEntryMode('current')
     setShowForm(true)
   }
 
   const handleCloseForm = () => {
     setShowForm(false)
     setEditingLog(null)
+    setEntryMode('current')
   }
 
   const router = useRouter()
@@ -602,284 +583,364 @@ export default function DashboardClient() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+      <div className="app-page flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 animate-pulse items-center justify-center rounded-3xl bg-[var(--brand-soft)] text-3xl">💩</div>
+          <p className="muted-copy text-sm font-bold">Ouverture de votre journal…</p>
+        </div>
+      </div>
     )
   }
 
+  const todayCount = logs.filter(log => log.date === new Date().toISOString().split('T')[0]).length
+  const perfectCount = logs.filter(log => log.poop_type === 'type4').length
+
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${colorClasses.gradient} dark:from-zinc-900 dark:to-zinc-800`}>
-      {/* Header */}
-      <header className="bg-white dark:bg-zinc-900 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="app-page pb-28 md:pb-12" style={{ '--accent': currentColorHex } as React.CSSProperties}>
+      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_88%,transparent)] backdrop-blur-xl">
+        <div className="app-container flex h-[4.5rem] items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowProfileSettings(true)}
-              className="w-12 h-12 rounded-full flex items-center justify-center text-2xl transition-transform hover:scale-110"
-              style={{ backgroundColor: `${currentColorHex}20`, border: `2px solid ${currentColorHex}` }}
-              title="Modifier le profil"
-            >
-              {profile?.avatar_emoji || '💩'}
-            </button>
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2b2119] text-xl shadow-sm">💩</span>
             <div>
-              <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                {profile?.pseudo || 'CacApp'}
-              </h1>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">{user?.email}</p>
+              <p className="text-lg font-black leading-none tracking-[-0.045em]">CacApp</p>
+              <p className="muted-copy mt-1 hidden text-[11px] font-semibold sm:block">Votre journal du trône</p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Lien trophées */}
-            <Link
-              href="/recaps"
-              className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 px-3 py-1.5 rounded-full hover:bg-sky-200 dark:hover:bg-sky-900/50 transition-colors"
-              title="Voir les récaps mensuels"
-            >
-              <span>📊</span>
-              <span className="font-medium text-sm">Récaps</span>
-            </Link>
 
-            <Link
-              href="/trophies"
-              className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-full hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
-              title="Voir les trophées"
-            >
+          <nav className="flex items-center gap-2" aria-label="Navigation du compte">
+            <button onClick={() => setShowPatchNotes(true)} className="icon-button hidden sm:inline-flex" title="Voir les nouveautés" aria-label="Voir les nouveautés">✦</button>
+            <Link href="/recaps" className="icon-button" title="Récaps mensuels" aria-label="Voir les récaps mensuels">◒</Link>
+            <Link href="/trophies" className="relative icon-button" title="Trophées" aria-label={`${userTrophies.length} trophées débloqués`}>
               <span>🏆</span>
-              <span className="font-medium text-sm">{userTrophies.length}</span>
+              <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-[#2b2119] px-1 text-[10px] font-black text-white">{userTrophies.length}</span>
             </Link>
-            
+            <button
+              onClick={() => setShowProfileSettings(true)}
+              className="ml-1 flex h-11 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 pr-1 sm:pr-3"
+              title="Modifier le profil"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full text-xl" style={{ backgroundColor: `${currentColorHex}20`, boxShadow: `inset 0 0 0 1.5px ${currentColorHex}` }}>
+                {profile?.avatar_emoji || '💩'}
+              </span>
+              <span className="hidden max-w-24 truncate text-sm font-extrabold sm:block">{profile?.pseudo || 'Mon profil'}</span>
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="app-container py-6 sm:py-9">
+        <div className={activeTab === 'list' ? '' : 'hidden md:block'}>
+        <section className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr] lg:gap-6">
+          <div className="paper-card relative overflow-hidden p-5 sm:p-8">
+            <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-15 blur-3xl" style={{ backgroundColor: currentColorHex }} />
+            <div className="relative">
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                  <p className="eyebrow mb-3">Aujourd’hui</p>
+                  <h1 className="display-title max-w-xl">Bonjour {profile?.pseudo || 'vous'}.</h1>
+                  <p className="muted-copy mt-3 max-w-md text-sm leading-6 sm:text-base">Un petit passage à noter, ou simplement envie de voir où vous en êtes&nbsp;?</p>
+                </div>
+                <button onClick={() => setShowPatchNotes(true)} className="shrink-0 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-extrabold sm:hidden">v2.1 ✦</button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <button
+                  onClick={() => {
+                    setEditingLog(null)
+                    setEntryMode('current')
+                    setShowForm(true)
+                  }}
+                  className="app-button-primary w-full text-base"
+                  style={{ backgroundColor: currentColorHex }}
+                >
+                  <span className="text-xl">＋</span>
+                  Noter un passage
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingLog(null)
+                    setEntryMode('backdated')
+                    setShowForm(true)
+                  }}
+                  className="app-button-secondary w-full sm:w-auto"
+                >
+                  <span aria-hidden="true">↶</span> Entrée passée
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className={`paper-card p-5 sm:p-6 ${streak >= 3 ? 'bg-[linear-gradient(145deg,#fff4e6,#f7dcc6)] dark:bg-[linear-gradient(145deg,#342218,#241d18)]' : ''}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="eyebrow mb-2">Série actuelle</p>
+                <p className="text-5xl font-black tracking-[-0.06em]">{streak}<span className="ml-2 text-lg tracking-normal text-[var(--muted)]">jour{streak > 1 ? 's' : ''}</span></p>
+              </div>
+              <span className={`text-5xl ${streak >= 3 ? 'drop-shadow-md' : 'grayscale opacity-35'}`}>🔥</span>
+            </div>
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-[var(--surface-muted)]">
+              <div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-500 transition-all" style={{ width: `${Math.min((streak / 7) * 100, 100)}%` }} />
+            </div>
+            <p className="muted-copy mt-3 text-xs font-semibold">{streak >= 7 ? 'Semaine complète — superbe régularité.' : `${Math.max(7 - streak, 0)} jour${7 - streak > 1 ? 's' : ''} avant une semaine complète.`}</p>
+          </div>
+        </section>
+
+        <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Résumé de votre activité">
+          {[
+            { value: logs.length, label: 'Passages', icon: '◎' },
+            { value: todayCount, label: 'Aujourd’hui', icon: '◷' },
+            { value: perfectCount, label: 'Type 4', icon: '〰' },
+            { value: Object.keys(logsByDate).length, label: 'Jours actifs', icon: '▦' },
+          ].map(stat => (
+            <div key={stat.label} className="paper-card-soft p-4 sm:p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">{stat.label}</span>
+                <span className="text-lg" style={{ color: currentColorHex }}>{stat.icon}</span>
+              </div>
+              <p className="text-3xl font-black tracking-[-0.05em]">{stat.value}</p>
+            </div>
+          ))}
+        </section>
+
+        {usersOnStreak.length > 0 && (
+          <section className="mt-6 overflow-hidden rounded-[1.5rem] bg-[#2b2119] p-5 text-[#fff8ee] shadow-sm sm:p-6">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.15em] text-[#e8a47e]">La communauté chauffe</p>
+                <h2 className="mt-2 text-xl font-black tracking-[-0.03em]">Le club des flammes</h2>
+              </div>
+              <span className="text-3xl">🔥</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {usersOnStreak.map((streakUser, index) => (
+                <div key={streakUser.id} className={`flex shrink-0 items-center gap-3 rounded-2xl border px-3 py-2.5 ${streakUser.id === user?.id ? 'border-[#e8a47e] bg-white/10' : 'border-white/10 bg-white/5'}`}>
+                  <span className="text-xs font-black text-white/40">{index + 1}</span>
+                  <span className="text-xl">{streakUser.avatar_emoji}</span>
+                  <div>
+                    <p className="max-w-24 truncate text-sm font-bold">{streakUser.pseudo || 'Anonyme'}</p>
+                    <p className="text-xs font-black text-[#e8a47e]">{streakUser.streak} jours</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        </div>
+
+        <section className={activeTab === 'list' ? 'mt-8' : 'mt-1 md:mt-8'}>
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <div className="md:hidden">
+                <p className="eyebrow mb-2">
+                  {activeTab === 'list' ? 'Votre journal' : activeTab === 'analytics' ? 'Vos tendances' : 'Exploration'}
+                </p>
+                <h2 className="text-3xl font-black tracking-[-0.05em]">
+                  {activeTab === 'list' ? 'Vos derniers passages' : activeTab === 'analytics' ? 'Analyses' : 'Carte de la communauté'}
+                </h2>
+                <p className="muted-copy mt-2 text-sm">
+                  {activeTab === 'list'
+                    ? 'Retrouvez et modifiez votre historique.'
+                    : activeTab === 'analytics'
+                      ? 'Comprenez votre rythme et vos habitudes.'
+                      : 'Explorez les passages géolocalisés.'}
+                </p>
+              </div>
+              <div className="hidden md:block">
+                <p className="eyebrow mb-2">Votre journal</p>
+                <h2 className="section-title">Tout votre suivi, au même endroit</h2>
+              </div>
+            </div>
             <button
               onClick={async () => {
                 const supabase = createClient()
                 await supabase.auth.signOut()
                 router.push('/login')
               }}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+              className="muted-copy hidden text-xs font-bold hover:text-[var(--danger)] sm:block"
             >
-              Déconnexion
+              Se déconnecter
             </button>
           </div>
-        </div>
-      </header>
 
-      {/* Main content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Banderole Patch Notes */}
-        <button
-          onClick={() => setShowPatchNotes(true)}
-          className="w-full mb-6 py-3 px-4 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.01] flex items-center justify-center gap-3 relative overflow-hidden group"
-        >
-          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-          <span className="text-xl">✨</span>
-          <span>Nouveautés v2.1 - Récaps mensuels !</span>
-          <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Nouveau</span>
-        </button>
-
-        {/* Add button */}
-        <button
-          onClick={() => setShowForm(true)}
-          className={`w-full mb-8 py-4 ${colorClasses.bg} ${colorClasses.hover} text-white font-semibold rounded-2xl shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-3`}
-        >
-          <span className="text-2xl">💩</span>
-          <span>Nouvelle commission</span>
-        </button>
-
-        {/* Popup Patch Notes */}
-        {showPatchNotes && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
-            <div className="bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 rounded-3xl shadow-2xl max-w-lg w-full p-1">
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl max-h-[85vh] overflow-y-auto">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center gap-2">
-                      ✨ Patch Notes v2.1
-                    </h2>
-                    <button
-                      onClick={() => setShowPatchNotes(false)}
-                      className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 text-xl"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  {/* Version 2.1 */}
-                  <div className="mb-8">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                        NOUVEAU
-                      </span>
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">20 mai 2026</span>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20 rounded-xl p-4">
-                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 mb-2">
-                          📊 Récaps mensuels
-                        </h3>
-                        <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
-                          <li>Nouvelle page pour revoir tous vos récaps des mois terminés</li>
-                          <li>Stats mois par mois : volume, jours actifs, meilleurs créneaux, lieux et types favoris</li>
-                          <li>Export en image verticale, prête pour les stories ou les messages</li>
-                          <li>Popup mensuelle pour vous inviter à consulter le récap du mois précédent</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Version 2.0 */}
-                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6 mb-8">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-bold px-2 py-1 rounded-full">
-                        v2.0
-                      </span>
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">25 janvier 2026</span>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl p-4">
-                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 mb-2">
-                          🏆 Système de Trophées
-                        </h3>
-                        <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
-                          <li>45 trophées à débloquer</li>
-                          <li>5 niveaux de rareté (Commun → Légendaire)</li>
-                          <li>7 catégories : Quantité, Variété, Taille, Streak, Temps, Lieux, Spécial</li>
-                          <li>Trophées secrets à découvrir</li>
-                          <li>Page dédiée pour voir tous les trophées</li>
-                          <li>Popup de célébration à chaque déblocage</li>
-                        </ul>
-                      </div>
-
-                      <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4">
-                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 mb-2">
-                          🔥 Système de Flammes (Streak)
-                        </h3>
-                        <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
-                          <li>Compteur de jours consécutifs</li>
-                          <li>Flammes visibles après 3 jours</li>
-                          <li>Stat de streak visible sur le dashboard</li>
-                          <li>Classement des utilisateurs en streak</li>
-                          <li>Popup de célébration au déblocage</li>
-                        </ul>
-                      </div>
-
-                      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-4">
-                        <h3 className="font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2 mb-2">
-                          👥 Social
-                        </h3>
-                        <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
-                          <li>Liste des utilisateurs en flammes sur l&apos;accueil</li>
-                          <li>Voir qui a débloqué chaque trophée</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Version 1.0 */}
-                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-bold px-2 py-1 rounded-full">
-                        v1.0
-                      </span>
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">Lancement</span>
-                    </div>
-                    <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1 ml-6 list-disc">
-                      <li>Enregistrement des cacas avec type et taille</li>
-                      <li>Géolocalisation des commissions</li>
-                      <li>Carte mondiale des cacas</li>
-                      <li>Tags de lieux personnalisés</li>
-                      <li>Profil personnalisable (pseudo, emoji, couleur)</li>
-                      <li>Statistiques de base</li>
-                    </ul>
-                  </div>
-
-                  <button
-                    onClick={() => setShowPatchNotes(false)}
-                    className="w-full mt-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-bold rounded-xl hover:from-violet-600 hover:to-fuchsia-600 transition-all shadow-lg"
-                  >
-                    C&apos;est noté ! 👍
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div className="mb-6 hidden grid-cols-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-sm md:grid" role="tablist" aria-label="Vues du journal">
+            {([
+              ['list', 'Journal', '☷'],
+              ['analytics', 'Analyses', '⌁'],
+              ['map', 'Carte', '⌖'],
+            ] as const).map(([tab, label, icon]) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                role="tab"
+                aria-selected={activeTab === tab}
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl text-sm font-extrabold transition-all ${activeTab === tab ? 'text-white shadow-sm' : 'text-[var(--muted)] hover:bg-[var(--surface-muted)]'}`}
+                style={activeTab === tab ? { backgroundColor: currentColorHex } : undefined}
+              >
+                <span className="text-lg">{icon}</span>{label}
+              </button>
+            ))}
           </div>
-        )}
 
-        {/* Popup récap mensuel */}
+          {activeTab === 'map' && <MapView onEdit={handleEdit} currentUserId={user?.id} />}
+          {activeTab === 'analytics' && <AnalyticsDashboard logs={logs} accentHex={currentColorHex} />}
+          {activeTab === 'list' && (logs.length === 0 ? (
+            <div className="paper-card px-6 py-14 text-center">
+              <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] bg-[var(--brand-soft)] text-4xl">🚽</span>
+              <h3 className="mt-5 text-xl font-black tracking-[-0.03em]">Votre journal est encore tout propre</h3>
+              <p className="muted-copy mx-auto mt-2 max-w-sm text-sm leading-6">Ajoutez votre premier passage pour commencer à faire apparaître vos habitudes.</p>
+              <button onClick={() => setShowForm(true)} className="app-button-primary mt-6" style={{ backgroundColor: currentColorHex }}>Ajouter mon premier passage</button>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {Object.entries(logsByDate).map(([date, dateLogs]) => (
+                <section key={date}>
+                  <div className="mb-3 flex items-center gap-3">
+                    <h3 className="text-sm font-black capitalize tracking-[-0.01em]">{formatDate(date)}</h3>
+                    <span className="h-px flex-1 bg-[var(--border)]" />
+                    <span className="muted-copy text-xs font-bold">{dateLogs.length}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {dateLogs.map(log => {
+                      const typeInfo = getPoopTypeInfo(log.poop_type)
+                      return (
+                        <article key={log.id} className="paper-card group flex items-center gap-3 p-3.5 sm:gap-4 sm:p-4">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-muted)] text-2xl sm:h-16 sm:w-16 sm:text-3xl">{typeInfo.emoji}</div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <time className="text-base font-black">{log.time.slice(0, 5)}</time>
+                              <span className="muted-copy truncate text-xs font-semibold">• {log.location || 'Lieu non précisé'}</span>
+                            </div>
+                            <p className="muted-copy mt-1 truncate text-sm"><strong className="font-bold text-[var(--foreground)]">{typeInfo.label}</strong> · {typeInfo.description}</p>
+                            {log.comments && <p className="muted-copy mt-1.5 line-clamp-1 text-xs italic">“{log.comments}”</p>}
+                          </div>
+                          <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
+                            <button onClick={() => handleEdit(log)} className="icon-button h-10 w-10 border-transparent bg-transparent" title="Modifier" aria-label="Modifier cette entrée">✎</button>
+                            <button onClick={() => handleDelete(log.id)} disabled={deleting === log.id} className="icon-button h-10 w-10 border-transparent bg-transparent text-[var(--muted)] hover:text-[var(--danger)] disabled:opacity-50" title="Supprimer" aria-label="Supprimer cette entrée">{deleting === log.id ? '…' : '⌫'}</button>
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ))}
+        </section>
+      </main>
+
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_94%,transparent)] px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden" aria-label="Vues principales">
+        <div className="mx-auto grid max-w-md grid-cols-[1fr_1fr_4.25rem_1fr_1fr] items-end">
+          {([
+            ['list', 'Journal', '☷'],
+            ['analytics', 'Stats', '⌁'],
+          ] as const).map(([tab, label, icon]) => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-black ${activeTab === tab ? 'text-[var(--accent)]' : 'text-[var(--muted)]'}`} aria-current={activeTab === tab ? 'page' : undefined}>
+              <span className="text-xl leading-none">{icon}</span>{label}
+            </button>
+          ))}
+          <button
+            onClick={() => { setEditingLog(null); setEntryMode('current'); setShowForm(true) }}
+            className="mx-auto -mt-7 flex h-16 w-16 items-center justify-center rounded-[1.35rem] border-4 border-[var(--surface)] text-3xl font-light text-white shadow-xl"
+            style={{ backgroundColor: currentColorHex }}
+            aria-label="Noter un nouveau passage"
+          >＋</button>
+          <button onClick={() => setActiveTab('map')} className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-black ${activeTab === 'map' ? 'text-[var(--accent)]' : 'text-[var(--muted)]'}`} aria-current={activeTab === 'map' ? 'page' : undefined}>
+            <span className="text-xl leading-none">⌖</span>Carte
+          </button>
+          <button onClick={() => setShowProfileSettings(true)} className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-black text-[var(--muted)]">
+            <span className="text-xl leading-none">◎</span>Profil
+          </button>
+        </div>
+      </nav>
+
+      {showPatchNotes && (
+        <div className="app-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="patch-title">
+          <div className="app-modal-sheet p-5 sm:p-7">
+            <div className="mb-7 flex items-start justify-between gap-4">
+              <div>
+                <p className="eyebrow mb-3">Nouveautés · v2.1</p>
+                <h2 id="patch-title" className="text-3xl font-black tracking-[-0.05em]">CacApp évolue.</h2>
+              </div>
+              <button onClick={() => setShowPatchNotes(false)} className="icon-button" aria-label="Fermer">×</button>
+            </div>
+            <div className="space-y-3">
+              {[
+                { icon: '◒', title: 'Récaps mensuels', copy: 'Revivez chaque mois avec vos chiffres clés, vos moments forts et une image à partager.' },
+                { icon: '🏆', title: '45 trophées', copy: 'Sept catégories, cinq raretés et quelques secrets à découvrir.' },
+                { icon: '🔥', title: 'Séries & communauté', copy: 'Suivez vos jours consécutifs et découvrez qui entretient ses flammes.' },
+                { icon: '⌖', title: 'Carte mondiale', copy: 'Retrouvez les passages géolocalisés de la communauté.' },
+              ].map(item => (
+                <div key={item.title} className="paper-card-soft flex gap-4 p-4">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-xl">{item.icon}</span>
+                  <div><h3 className="font-black">{item.title}</h3><p className="muted-copy mt-1 text-sm leading-5">{item.copy}</p></div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setShowPatchNotes(false)} className="app-button-primary mt-6 w-full" style={{ backgroundColor: currentColorHex }}>C’est noté</button>
+          </div>
+        </div>
+      )}
+
         {showMonthlyRecapPopup && monthlyRecapPrompt && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[65] p-4">
-            <div className="bg-gradient-to-br from-sky-500 via-cyan-500 to-emerald-500 rounded-3xl shadow-2xl max-w-sm w-full p-1">
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-7 text-center">
-                <div className="text-7xl mb-4">📊</div>
-                <p className="text-sm font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wide mb-2">
+          <div className="app-modal-backdrop z-[65]" role="dialog" aria-modal="true" aria-labelledby="recap-popup-title">
+            <div className="app-modal-sheet max-w-sm p-6 text-center sm:p-8">
+                <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-sky-100 text-4xl dark:bg-sky-950/50">◒</div>
+                <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-sky-600 dark:text-sky-400">
                   Nouveau récap disponible
                 </p>
-                <h2 className="text-2xl font-extrabold text-zinc-800 dark:text-zinc-100 mb-3 capitalize">
+                <h2 id="recap-popup-title" className="text-3xl font-black capitalize tracking-[-0.05em]">
                   {monthlyRecapPrompt.monthLabel}
                 </h2>
-                <p className="text-zinc-600 dark:text-zinc-300 mb-2">
+                <p className="muted-copy mx-auto mt-3 max-w-xs text-sm leading-6">
                   Votre mois est prêt à être revu avec ses stats, ses moments forts et une image à partager.
                 </p>
-                <p className="text-4xl font-black text-sky-600 dark:text-sky-400 mb-6">
+                <p className="my-6 text-5xl font-black tracking-[-0.05em] text-sky-600 dark:text-sky-400">
                   {monthlyRecapPrompt.total}
-                  <span className="text-base font-bold text-zinc-500 dark:text-zinc-400 ml-2">
+                  <span className="muted-copy ml-2 text-sm font-bold tracking-normal">
                     passage{monthlyRecapPrompt.total > 1 ? 's' : ''}
                   </span>
                 </p>
                 <div className="space-y-3">
-                  <button
-                    onClick={handleOpenMonthlyRecap}
-                    className="w-full py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-bold rounded-xl hover:from-sky-600 hover:to-cyan-600 transition-all shadow-lg"
-                  >
-                    Voir mon récap
-                  </button>
-                  <button
-                    onClick={markMonthlyRecapPromptSeen}
-                    className="w-full py-2.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 font-medium"
-                  >
-                    Fermer
-                  </button>
+                  <button onClick={handleOpenMonthlyRecap} className="app-button-primary w-full bg-sky-600">Voir mon récap</button>
+                  <button onClick={markMonthlyRecapPromptSeen} className="app-button-secondary w-full border-transparent">Plus tard</button>
                 </div>
-              </div>
             </div>
           </div>
         )}
 
         {/* Popup déblocage des flammes */}
         {showStreakPopup && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
-            <div className="bg-gradient-to-br from-orange-500 via-red-500 to-yellow-500 rounded-3xl shadow-2xl max-w-sm w-full p-1">
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 text-center">
+          <div className="app-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="streak-popup-title">
+            <div className="app-modal-sheet max-w-sm p-7 text-center">
                 <div className="text-8xl mb-4 animate-pulse">🔥</div>
-                <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500 mb-4">
+                <h2 id="streak-popup-title" className="mb-4 text-3xl font-black tracking-[-0.05em] text-orange-500">
                   Flammes débloquées !
                 </h2>
-                <p className="text-zinc-600 dark:text-zinc-300 mb-2">
+                <p className="muted-copy mb-2">
                   Incroyable ! Tu as fait caca pendant
                 </p>
                 <p className="text-5xl font-bold text-orange-500 mb-2">
                   {streak} jours
                 </p>
-                <p className="text-zinc-600 dark:text-zinc-300 mb-6">
+                <p className="muted-copy mb-6">
                   consécutifs ! Continue comme ça pour maintenir tes flammes 💪
                 </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                <p className="muted-copy mb-6 text-sm">
                   ⚠️ N&apos;oublie pas : il faut au moins 1 caca par jour pour garder ta streak !
                 </p>
                 <button
                   onClick={() => setShowStreakPopup(false)}
-                  className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:from-orange-600 hover:to-red-600 transition-all shadow-lg"
+                  className="app-button-primary w-full bg-gradient-to-r from-orange-500 to-red-500"
                 >
                   C&apos;est parti ! 🚀
                 </button>
-              </div>
             </div>
           </div>
         )}
 
         {/* Popup nouveau trophée */}
         {newTrophyPopup && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4">
+          <div className="app-modal-backdrop z-[70]" role="dialog" aria-modal="true">
             <div className={`rounded-3xl shadow-2xl max-w-sm w-full p-1 ${
               newTrophyPopup.rarity === 'legendary' 
                 ? 'bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600' 
@@ -891,7 +952,7 @@ export default function DashboardClient() {
                 ? 'bg-gradient-to-br from-green-500 via-emerald-500 to-green-600'
                 : 'bg-gradient-to-br from-zinc-400 via-zinc-500 to-zinc-600'
             }`}>
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 text-center">
+              <div className="rounded-[calc(1.5rem-2px)] bg-[var(--surface)] p-8 text-center">
                 <div className="text-7xl mb-4">{newTrophyPopup.emoji}</div>
                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-2">
                   Nouveau trophée débloqué !
@@ -933,21 +994,13 @@ export default function DashboardClient() {
           </div>
         )}
 
-        {/* Profile Settings modal */}
         {showProfileSettings && profile && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                    ⚙️ Paramètres du profil
-                  </h2>
-                  <button
-                    onClick={() => setShowProfileSettings(false)}
-                    className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                  >
-                    ✕
-                  </button>
+          <div className="app-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+            <div className="app-modal-sheet">
+              <div className="p-5 sm:p-7">
+                <div className="mb-7 flex items-start justify-between gap-4">
+                  <div><p className="eyebrow mb-2">Personnalisation</p><h2 id="profile-title" className="text-2xl font-black tracking-[-0.04em]">Votre profil</h2></div>
+                  <button onClick={() => setShowProfileSettings(false)} className="icon-button" aria-label="Fermer">×</button>
                 </div>
                 <ProfileSettings 
                   profile={profile}
@@ -957,194 +1010,40 @@ export default function DashboardClient() {
                   }}
                   onCancel={() => setShowProfileSettings(false)}
                 />
+                <button
+                  onClick={async () => {
+                    const supabase = createClient()
+                    await supabase.auth.signOut()
+                    router.push('/login')
+                  }}
+                  className="mt-5 w-full py-2 text-sm font-bold text-[var(--muted)] hover:text-[var(--danger)] sm:hidden"
+                >Se déconnecter</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Form modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                    {editingLog ? 'Modifier l\'entrée' : 'Nouvelle entrée'}
-                  </h2>
-                  <button
-                    onClick={handleCloseForm}
-                    className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                  >
-                    ✕
-                  </button>
+          <div className="app-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="form-title">
+            <div className="app-modal-sheet sm:max-w-2xl">
+              <div className="p-5 sm:p-7">
+                <div className="mb-7 flex items-start justify-between gap-4">
+                  <div><p className="eyebrow mb-2">Votre journal</p><h2 id="form-title" className="text-2xl font-black tracking-[-0.04em]">
+                    {editingLog ? 'Modifier l\'entrée' : entryMode === 'backdated' ? 'Ajouter une entrée passée' : 'Nouvelle entrée'}
+                  </h2></div>
+                  <button onClick={handleCloseForm} className="icon-button" aria-label="Fermer">×</button>
                 </div>
                 <AddPoopForm 
                   onSuccess={editingLog ? handleLogUpdated : handleLogAdded} 
                   onCancel={handleCloseForm}
                   editLog={editingLog}
+                  entryMode={entryMode}
                 />
               </div>
             </div>
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm">
-            <p className={`text-2xl font-bold ${colorClasses.text}`}>{logs.length}</p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Total</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm">
-            <p className={`text-2xl font-bold ${colorClasses.text}`}>
-              {logs.filter(l => l.date === new Date().toISOString().split('T')[0]).length}
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Aujourd&apos;hui</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm">
-            <p className={`text-2xl font-bold ${colorClasses.text}`}>
-              {logs.filter(l => l.poop_type === 'type4').length}
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Parfaits 🐍</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm">
-            <p className={`text-2xl font-bold ${colorClasses.text}`}>
-              {Object.keys(logsByDate).length}
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Jours actifs</p>
-          </div>
-          <div className={`rounded-xl p-4 shadow-sm ${streak >= 3 ? 'bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30' : 'bg-white dark:bg-zinc-900'}`}>
-            <p className={`text-2xl font-bold ${streak >= 3 ? 'text-orange-500' : colorClasses.text}`}>
-              {streak >= 3 ? `🔥 ${streak}` : streak}
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Streak</p>
-          </div>
-        </div>
-
-        {/* Utilisateurs en streak */}
-        {usersOnStreak.length > 0 && (
-          <div className="mb-8 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-2xl p-4 shadow-sm">
-            <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 mb-4 flex items-center gap-2">
-              <span className="text-2xl">🔥</span> Utilisateurs en streak
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              {usersOnStreak.map((u) => (
-                <div
-                  key={u.id}
-                  className={`flex items-center gap-2 bg-white dark:bg-zinc-800 rounded-full px-4 py-2 shadow-sm ${
-                    u.id === user?.id ? 'ring-2 ring-orange-500' : ''
-                  }`}
-                >
-                  <span className="text-xl">{u.avatar_emoji}</span>
-                  <span className="font-medium text-zinc-700 dark:text-zinc-200">
-                    {u.pseudo || 'Anonyme'}
-                  </span>
-                  <span className="flex items-center gap-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold px-2 py-0.5 rounded-full">
-                    🔥 {u.streak}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'list'
-                ? `${colorClasses.bg} text-white shadow-md`
-                : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-            }`}
-          >
-            📋 Liste
-          </button>
-          <button
-            onClick={() => setActiveTab('map')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'map'
-                ? `${colorClasses.bg} text-white shadow-md`
-                : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-            }`}
-          >
-            🗺️ Carte
-          </button>
-        </div>
-
-        {/* Map View */}
-        {activeTab === 'map' && (
-          <MapView onEdit={handleEdit} currentUserId={user?.id} />
-        )}
-
-        {/* Logs list */}
-        {activeTab === 'list' && (logs.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-6xl mb-4">🚽</p>
-            <p className="text-zinc-500 dark:text-zinc-400">
-              Aucune entrée pour l&apos;instant.<br />
-              Ajoutez votre première commission !
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Object.entries(logsByDate).map(([date, dateLogs]) => (
-              <div key={date}>
-                <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-3 capitalize">
-                  {formatDate(date)}
-                </h3>
-                <div className="space-y-3">
-                  {dateLogs.map((log) => {
-                    const typeInfo = getPoopTypeInfo(log.poop_type)
-                    return (
-                      <div
-                        key={log.id}
-                        className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm flex items-start gap-4"
-                      >
-                        <div className="text-3xl">{typeInfo.emoji}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-zinc-800 dark:text-zinc-100">
-                              {log.time.slice(0, 5)}
-                            </span>
-                            <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                              📍 {log.location}
-                            </span>
-                          </div>
-                          <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-1">
-                            {typeInfo.label} - {typeInfo.description}
-                          </p>
-                          {log.comments && (
-                            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 italic">
-                              &quot;{log.comments}&quot;
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(log)}
-                            className="text-zinc-400 hover:text-amber-500 transition-colors"
-                            title="Modifier"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => handleDelete(log.id)}
-                            disabled={deleting === log.id}
-                            className="text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-50"
-                            title="Supprimer"
-                          >
-                            {deleting === log.id ? '...' : '🗑️'}
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </main>
     </div>
   )
 }

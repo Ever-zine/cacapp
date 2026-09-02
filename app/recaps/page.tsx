@@ -28,29 +28,6 @@ type MonthlyRecap = {
 
 const getColorHex = (color: AccentColor) => ACCENT_COLORS.find(c => c.value === color)?.hex || '#f59e0b'
 
-const getColorClasses = (color: AccentColor) => {
-  const colorMap: Record<AccentColor, { bg: string; hover: string; text: string; border: string; ring: string; gradient: string }> = {
-    amber: { bg: 'bg-amber-600', hover: 'hover:bg-amber-700', text: 'text-amber-600', border: 'border-amber-200 dark:border-amber-900/50', ring: 'ring-amber-500', gradient: 'from-amber-50 to-orange-100' },
-    red: { bg: 'bg-red-600', hover: 'hover:bg-red-700', text: 'text-red-600', border: 'border-red-200 dark:border-red-900/50', ring: 'ring-red-500', gradient: 'from-red-50 to-rose-100' },
-    orange: { bg: 'bg-orange-600', hover: 'hover:bg-orange-700', text: 'text-orange-600', border: 'border-orange-200 dark:border-orange-900/50', ring: 'ring-orange-500', gradient: 'from-orange-50 to-amber-100' },
-    yellow: { bg: 'bg-yellow-500', hover: 'hover:bg-yellow-600', text: 'text-yellow-600', border: 'border-yellow-200 dark:border-yellow-900/50', ring: 'ring-yellow-500', gradient: 'from-yellow-50 to-amber-100' },
-    lime: { bg: 'bg-lime-600', hover: 'hover:bg-lime-700', text: 'text-lime-600', border: 'border-lime-200 dark:border-lime-900/50', ring: 'ring-lime-500', gradient: 'from-lime-50 to-green-100' },
-    green: { bg: 'bg-green-600', hover: 'hover:bg-green-700', text: 'text-green-600', border: 'border-green-200 dark:border-green-900/50', ring: 'ring-green-500', gradient: 'from-green-50 to-emerald-100' },
-    emerald: { bg: 'bg-emerald-600', hover: 'hover:bg-emerald-700', text: 'text-emerald-600', border: 'border-emerald-200 dark:border-emerald-900/50', ring: 'ring-emerald-500', gradient: 'from-emerald-50 to-teal-100' },
-    teal: { bg: 'bg-teal-600', hover: 'hover:bg-teal-700', text: 'text-teal-600', border: 'border-teal-200 dark:border-teal-900/50', ring: 'ring-teal-500', gradient: 'from-teal-50 to-cyan-100' },
-    cyan: { bg: 'bg-cyan-600', hover: 'hover:bg-cyan-700', text: 'text-cyan-600', border: 'border-cyan-200 dark:border-cyan-900/50', ring: 'ring-cyan-500', gradient: 'from-cyan-50 to-sky-100' },
-    sky: { bg: 'bg-sky-600', hover: 'hover:bg-sky-700', text: 'text-sky-600', border: 'border-sky-200 dark:border-sky-900/50', ring: 'ring-sky-500', gradient: 'from-sky-50 to-blue-100' },
-    blue: { bg: 'bg-blue-600', hover: 'hover:bg-blue-700', text: 'text-blue-600', border: 'border-blue-200 dark:border-blue-900/50', ring: 'ring-blue-500', gradient: 'from-blue-50 to-indigo-100' },
-    indigo: { bg: 'bg-indigo-600', hover: 'hover:bg-indigo-700', text: 'text-indigo-600', border: 'border-indigo-200 dark:border-indigo-900/50', ring: 'ring-indigo-500', gradient: 'from-indigo-50 to-violet-100' },
-    violet: { bg: 'bg-violet-600', hover: 'hover:bg-violet-700', text: 'text-violet-600', border: 'border-violet-200 dark:border-violet-900/50', ring: 'ring-violet-500', gradient: 'from-violet-50 to-purple-100' },
-    purple: { bg: 'bg-purple-600', hover: 'hover:bg-purple-700', text: 'text-purple-600', border: 'border-purple-200 dark:border-purple-900/50', ring: 'ring-purple-500', gradient: 'from-purple-50 to-fuchsia-100' },
-    fuchsia: { bg: 'bg-fuchsia-600', hover: 'hover:bg-fuchsia-700', text: 'text-fuchsia-600', border: 'border-fuchsia-200 dark:border-fuchsia-900/50', ring: 'ring-fuchsia-500', gradient: 'from-fuchsia-50 to-pink-100' },
-    pink: { bg: 'bg-pink-600', hover: 'hover:bg-pink-700', text: 'text-pink-600', border: 'border-pink-200 dark:border-pink-900/50', ring: 'ring-pink-500', gradient: 'from-pink-50 to-rose-100' },
-    rose: { bg: 'bg-rose-600', hover: 'hover:bg-rose-700', text: 'text-rose-600', border: 'border-rose-200 dark:border-rose-900/50', ring: 'ring-rose-500', gradient: 'from-rose-50 to-red-100' },
-  }
-  return colorMap[color] || colorMap.amber
-}
-
 const monthFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' })
 const shortMonthFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric' })
 const dayFormatter = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric' })
@@ -315,7 +292,6 @@ export default function RecapsPage() {
   const [exporting, setExporting] = useState(false)
   const [shareMessage, setShareMessage] = useState<string | null>(null)
   const accentColor = profile?.accent_color || 'amber'
-  const colorClasses = getColorClasses(accentColor)
   const accentHex = getColorHex(accentColor)
 
   useEffect(() => {
@@ -400,67 +376,68 @@ export default function RecapsPage() {
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${colorClasses.gradient} dark:from-zinc-900 dark:to-zinc-800`}>
+      <div className="app-page flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">📊</div>
-          <p className="text-zinc-600 dark:text-zinc-400">Préparation des récaps...</p>
+          <div className="mx-auto mb-4 flex h-16 w-16 animate-pulse items-center justify-center rounded-3xl bg-[var(--brand-soft)] text-3xl">◒</div>
+          <p className="muted-copy text-sm font-bold">Préparation de vos récaps…</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${colorClasses.gradient} dark:from-zinc-900 dark:to-zinc-800`}>
-      <header className="bg-white dark:bg-zinc-900 shadow-sm sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 flex items-center gap-2">
-            ← Retour
+    <div className="app-page pb-10" style={{ '--accent': accentHex } as React.CSSProperties}>
+      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_88%,transparent)] backdrop-blur-xl">
+        <div className="app-container flex h-[4.5rem] items-center justify-between">
+          <Link href="/dashboard" className="app-button-secondary min-h-10 rounded-full px-3 text-sm">
+            ← <span className="hidden sm:inline">Retour</span>
           </Link>
-          <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
-            📊 Récaps mensuels
+          <h1 className="flex items-center gap-2 text-lg font-black tracking-[-0.04em]">
+            <span>◒</span> Récaps mensuels
           </h1>
-          <div className="text-sm text-zinc-500 dark:text-zinc-400">
+          <div className="rounded-full bg-[var(--brand-soft)] px-3 py-1.5 text-xs font-black text-[var(--brand)]">
             {recaps.length} mois
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className="app-container py-7 sm:py-10">
         {recaps.length === 0 || !selectedRecap ? (
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 shadow-sm text-center">
-            <p className="text-6xl mb-4">🚽</p>
-            <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-2">Aucun récap pour le moment</h2>
-            <p className="text-zinc-500 dark:text-zinc-400 mb-6">Les récaps apparaissent uniquement une fois le mois terminé.</p>
+          <div className="paper-card px-6 py-14 text-center">
+            <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-[2rem] bg-[var(--brand-soft)] text-4xl">◒</span>
+            <h2 className="mt-5 text-xl font-black tracking-[-0.03em]">Aucun récap pour le moment</h2>
+            <p className="muted-copy mx-auto mb-6 mt-2 max-w-sm text-sm leading-6">Les récaps apparaissent une fois le mois terminé.</p>
             <Link
               href="/dashboard"
-              className={`inline-flex items-center justify-center px-5 py-3 rounded-xl text-white font-semibold ${colorClasses.bg} ${colorClasses.hover}`}
+              className="app-button-primary"
+              style={{ backgroundColor: accentHex }}
             >
-              Ajouter une commission
+              Ajouter un passage
             </Link>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-[280px_1fr] gap-6 items-start">
-            <aside className="bg-white/80 dark:bg-zinc-900/90 rounded-2xl p-4 shadow-sm lg:sticky lg:top-24">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-zinc-800 dark:text-zinc-100">Tous les mois</h2>
-                <span className={`text-sm font-bold ${colorClasses.text}`}>{recappedLogsCount}</span>
+          <div className="grid items-start gap-5 lg:grid-cols-[280px_1fr] lg:gap-6">
+            <aside className="paper-card p-4 lg:sticky lg:top-24">
+              <div className="mb-4 flex items-center justify-between">
+                <div><p className="eyebrow mb-1" style={{ color: accentHex }}>Archives</p><h2 className="font-black">Tous les mois</h2></div>
+                <span className="text-sm font-black" style={{ color: accentHex }}>{recappedLogsCount}</span>
               </div>
-              <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+              <div className="flex gap-2 overflow-x-auto pb-1 lg:max-h-[60vh] lg:flex-col lg:overflow-y-auto lg:pr-1">
                 {recaps.map(recap => (
                   <button
                     key={recap.monthKey}
                     onClick={() => setSelectedMonth(recap.monthKey)}
-                    className={`w-full text-left rounded-xl p-3 border transition-all ${
+                    className={`min-w-40 shrink-0 rounded-2xl border p-3 text-left transition-all lg:w-full ${
                       selectedRecap.monthKey === recap.monthKey
-                        ? `bg-white dark:bg-zinc-800 border-transparent ring-2 ${colorClasses.ring} shadow-md`
-                        : `bg-zinc-50 dark:bg-zinc-800/70 ${colorClasses.border} hover:bg-white dark:hover:bg-zinc-800`
+                        ? 'border-transparent bg-[var(--brand-soft)] shadow-sm ring-2 ring-[var(--accent)]'
+                        : 'border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-muted)]'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-100 capitalize">{recap.shortLabel}</span>
-                      <span className={`font-bold ${colorClasses.text}`}>{recap.total}</span>
+                      <span className="font-black capitalize">{recap.shortLabel}</span>
+                      <span className="font-black" style={{ color: accentHex }}>{recap.total}</span>
                     </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                    <p className="muted-copy mt-1 text-xs">
                       {recap.activeDays} jour{recap.activeDays > 1 ? 's' : ''} actif{recap.activeDays > 1 ? 's' : ''}
                     </p>
                   </button>
@@ -468,11 +445,11 @@ export default function RecapsPage() {
               </div>
             </aside>
 
-            <section className="space-y-6">
+            <section className="space-y-5 sm:space-y-6">
               <div
-                className="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-2xl text-white"
+                className="relative overflow-hidden rounded-[1.75rem] p-5 text-white shadow-2xl sm:p-8"
                 style={{
-                  background: `linear-gradient(135deg, #18181b 0%, ${accentHex} 48%, #f97316 100%)`,
+                  background: `linear-gradient(135deg, #2b2119 0%, ${accentHex} 62%, #c86f43 100%)`,
                 }}
               >
                 <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-white/10" />
@@ -480,8 +457,8 @@ export default function RecapsPage() {
                 <div className="relative">
                   <div className="flex items-start justify-between gap-4 mb-10">
                     <div>
-                      <p className="text-sm uppercase tracking-[0.2em] text-white/70 font-bold">CacApp Monthly Recap</p>
-                      <h2 className="text-4xl sm:text-6xl font-black mt-2 capitalize leading-tight">{selectedRecap.monthLabel}</h2>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-white/60">Le mois sur le trône</p>
+                      <h2 className="mt-2 text-4xl font-black capitalize leading-tight tracking-[-0.055em] sm:text-6xl">{selectedRecap.monthLabel}</h2>
                     </div>
                     <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-4xl shadow-lg">
                       {profile?.avatar_emoji || '💩'}
@@ -489,7 +466,7 @@ export default function RecapsPage() {
                   </div>
 
                   <div className="mb-10">
-                    <p className="text-[7rem] sm:text-[10rem] leading-none font-black tracking-normal">{selectedRecap.total}</p>
+                    <p className="text-[6.5rem] font-black leading-none tracking-[-0.08em] sm:text-[10rem]">{selectedRecap.total}</p>
                     <p className="text-2xl sm:text-3xl font-extrabold">
                       passage{selectedRecap.total > 1 ? 's' : ''} aux toilettes
                     </p>
@@ -552,27 +529,28 @@ export default function RecapsPage() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 shadow-sm">
+              <div className="paper-card p-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => exportImage(true)}
                     disabled={exporting}
-                    className={`flex-1 py-3 px-4 rounded-xl text-white font-semibold ${colorClasses.bg} ${colorClasses.hover} disabled:opacity-60 transition-all`}
+                    className="app-button-primary flex-1 disabled:opacity-60"
+                    style={{ backgroundColor: accentHex }}
                   >
-                    {exporting ? 'Génération...' : 'Partager en image'}
+                    {exporting ? 'Génération…' : 'Partager en image'}
                   </button>
                   <button
                     onClick={() => exportImage(false)}
                     disabled={exporting}
-                    className="flex-1 py-3 px-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-60 transition-all"
+                    className="app-button-secondary flex-1 disabled:opacity-60"
                   >
                     Télécharger le PNG
                   </button>
                 </div>
                 {shareMessage && (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-3 text-center">{shareMessage}</p>
+                  <p className="muted-copy mt-3 text-center text-sm font-semibold">{shareMessage}</p>
                 )}
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-3 text-center">
+                <p className="muted-copy mt-3 text-center text-xs">
                   Format story vertical 1080x1920, prêt pour Instagram ou Messages.
                 </p>
               </div>
